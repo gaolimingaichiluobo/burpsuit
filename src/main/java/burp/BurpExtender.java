@@ -7,6 +7,7 @@ import burp.result.CsrfTestResult;
 import burp.result.PrivilegeEscalationResult;
 import burp.result.UnsafeMethodTestResult;
 import burp.session.TestSession;
+import burp.utils.MultipartFixer;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -54,9 +55,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private JButton testAuthButton;
     private JButton testCsrfButton;
     private JButton testUnsafeMethodButton;
-    private JCheckBox includeRequestBodyCheckBox;
-    private JCheckBox includeResponseBodyCheckBox;
-    private JCheckBox includeRequestHeadersCheckBox;
     private JTextField excludeExtensionsField;
     private JTextField excludeUrlKeywordsField;
     private JCheckBox enableUrlDeduplicationCheckBox; // URL去重开关
@@ -77,7 +75,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private JSplitPane authTestDetailSplitPane;
     private JSplitPane csrfTestDetailSplitPane;
     private JSplitPane unsafeMethodTestDetailSplitPane;
-    private JSplitPane privilegeEscalationDetailSplitPane; // 新增越权测试详情面板
     private JTextArea requestViewer;
     private JTextArea responseViewer;
     private JTextArea csrfRequestViewer;
@@ -178,12 +175,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
                 // 添加导入按钮
                 importButton = new JButton("导入数据");
-                importButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        importData();
-                    }
-                });
+                importButton.addActionListener(e -> importData());
 
                 // IP和端口修改
                 JLabel ipLabel = new JLabel("目标IP:");
@@ -248,35 +240,35 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 firstRowPanel.add(exportButton);
                 firstRowPanel.add(exportSqlmapButton);
                 firstRowPanel.add(importButton);
-                
+
                 // 创建IP和端口输入面板
                 JPanel ipPortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
                 ipPortPanel.add(ipLabel);
                 ipPortPanel.add(ipTextField);
                 ipPortPanel.add(portLabel);
                 ipPortPanel.add(portTextField);
-                
+
                 // 将IP和端口输入面板添加到第一行
                 firstRowPanel.add(ipPortPanel);
-                
+
                 // 添加第一行到控制面板
                 gbc.gridx = 0;
                 gbc.gridy = 0;
                 gbc.gridwidth = GridBagConstraints.REMAINDER;
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 controlPanel.add(firstRowPanel, gbc);
-                
+
                 // 创建第二行面板：测试按钮，间距相等
                 JPanel secondRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
                 secondRowPanel.add(testAuthButton);
                 secondRowPanel.add(testCsrfButton);
                 secondRowPanel.add(testUnsafeMethodButton);
                 secondRowPanel.add(testPrivilegeEscalationButton);
-                
+
                 // 添加第二行到控制面板
                 gbc.gridy = 1;
                 controlPanel.add(secondRowPanel, gbc);
-                
+
                 // 重置gridwidth和fill
                 gbc.gridwidth = 1;
                 gbc.fill = GridBagConstraints.NONE;
@@ -285,50 +277,37 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 gbc.gridx = 0;
                 gbc.gridy = 2;
                 gbc.weightx = 0;
-                
-                // 移除包含请求体、响应体和请求头的选择框，因为现在总是导出所有内容
-                // 为了保持兼容性，仍然保留这些变量但不再显示在UI上
-                includeRequestBodyCheckBox = new JCheckBox("包含请求体", true);
-                includeResponseBodyCheckBox = new JCheckBox("包含响应体", true);
-                includeRequestHeadersCheckBox = new JCheckBox("包含请求头", true);
+
 
                 // 添加URL去重开关
                 enableUrlDeduplicationCheckBox = new JCheckBox("开启URL去重", true);
                 enableUrlDeduplicationCheckBox.setToolTipText("开启后将自动移除URL参数并对重复URL只保留一个");
-                enableUrlDeduplicationCheckBox.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        // 如果关闭去重，清空去重集合，便于重新开始收集
-                        if (!enableUrlDeduplicationCheckBox.isSelected()) {
-                            uniqueUrls.clear();
-                            log.info("URL去重功能已关闭，已清空去重集合");
-                        } else {
-                            log.info("URL去重功能已开启");
-                        }
-                        // 保存设置
-                        saveSettings();
+                enableUrlDeduplicationCheckBox.addActionListener(e -> {
+                    // 如果关闭去重，清空去重集合，便于重新开始收集
+                    if (!enableUrlDeduplicationCheckBox.isSelected()) {
+                        uniqueUrls.clear();
+                        log.info("URL去重功能已关闭，已清空去重集合");
+                    } else {
+                        log.info("URL去重功能已开启");
                     }
+                    // 保存设置
+                    saveSettings();
                 });
 
                 JButton clearButton = new JButton("清空列表");
-                clearButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        clearData();
-                    }
-                });
+                clearButton.addActionListener(e -> clearData());
 
                 // 创建第三行面板：URL去重开关和清空列表按钮
                 JPanel thirdRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
                 thirdRowPanel.add(enableUrlDeduplicationCheckBox);
                 thirdRowPanel.add(clearButton);
-                
+
                 // 添加第三行到控制面板
                 gbc.gridx = 0;
                 gbc.gridy = 2;
                 gbc.gridwidth = GridBagConstraints.REMAINDER;
                 controlPanel.add(thirdRowPanel, gbc);
-                
+
                 // 重置gridwidth
                 gbc.gridwidth = 1;
                 gbc.weightx = 0.0;
@@ -367,20 +346,17 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 创建第四行面板：排除后缀
                 JPanel fourthRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
                 fourthRowPanel.add(excludeLabel);
-                
+
                 // 设置文本框宽度
                 excludeExtensionsField.setPreferredSize(new Dimension(500, 25));
                 fourthRowPanel.add(excludeExtensionsField);
                 fourthRowPanel.add(applyExcludeButton);
-                
+
                 // 添加第四行到控制面板
                 gbc.gridx = 0;
                 gbc.gridwidth = GridBagConstraints.REMAINDER;
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 controlPanel.add(fourthRowPanel, gbc);
-                
-                // 重置fill
-                gbc.fill = GridBagConstraints.NONE;
 
                 // 第五行：排除URL关键词
                 gbc.gridx = 0;
@@ -418,18 +394,18 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 创建第五行面板：排除URL关键词
                 JPanel fifthRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
                 fifthRowPanel.add(excludeUrlLabel);
-                
+
                 // 设置文本框宽度
                 excludeUrlKeywordsField.setPreferredSize(new Dimension(500, 25));
                 fifthRowPanel.add(excludeUrlKeywordsField);
                 fifthRowPanel.add(applyUrlExcludeButton);
-                
+
                 // 添加第五行到控制面板
                 gbc.gridx = 0;
                 gbc.gridwidth = GridBagConstraints.REMAINDER;
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 controlPanel.add(fifthRowPanel, gbc);
-                
+
                 // 重置fill和gridwidth
                 gbc.fill = GridBagConstraints.NONE;
                 gbc.gridwidth = 1;
@@ -448,6 +424,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 添加表格排序器
                 TableRowSorter<RequestTableModel> sorter = new TableRowSorter<>(tableModel);
                 requestsTable.setRowSorter(sorter);
+
+                //todo 如果想添加请求列表的请求查看器可以在这里添加
 
                 // 设置状态码列的渲染器，根据状态码显示不同颜色
                 requestsTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
@@ -684,7 +662,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 authButtonPanel.add(batchConfirmButton);
                 authButtonPanel.add(selectAllAuthButton);
                 authButtonPanel.add(deselectAllAuthButton);
-                
+
                 // 添加重新测试按钮
                 JButton retestAuthButton = new JButton("重新测试");
                 retestAuthButton.addActionListener(new ActionListener() {
@@ -926,7 +904,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 csrfButtonPanel.add(batchConfirmCsrfButton);
                 csrfButtonPanel.add(selectAllCsrfButton);
                 csrfButtonPanel.add(deselectAllCsrfButton);
-                
+
                 // 添加重新测试按钮
                 JButton retestCsrfButton = new JButton("重新测试");
                 retestCsrfButton.addActionListener(new ActionListener() {
@@ -1182,7 +1160,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 unsafeMethodButtonPanel.add(batchConfirmUnsafeMethodButton);
                 unsafeMethodButtonPanel.add(selectAllUnsafeMethodButton);
                 unsafeMethodButtonPanel.add(deselectAllUnsafeMethodButton);
-                
+
                 // 添加重新测试按钮
                 JButton retestUnsafeMethodButton = new JButton("重新测试");
                 retestUnsafeMethodButton.addActionListener(new ActionListener() {
@@ -1389,7 +1367,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private void applyFilters() {
         TableRowSorter<RequestTableModel> sorter = new TableRowSorter<>(tableModel);
         requestsTable.setRowSorter(sorter);
-        
+
         // 清除所有筛选条件
         sorter.setRowFilter(null);
         log.info("清除所有筛选条件");
@@ -1708,7 +1686,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 originalUrl, url, requestHeaders,
                                 updateRequestHeaders, updateCookies, cookieDomain
                         );
-                        log.info("================================={}", requestHeaders);
                         log.info("第" + lineCount + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
                                 (updateCookies ? " Cookies" : ""));
                     }
@@ -1723,9 +1700,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     info.setMethod(method);
                     info.setStatusCode(statusCode);
                     info.setRequestHeaders(requestHeaders);
-                    info.setRequestBody(requestBody);
+                    info.setRequestBody(MultipartFixer.fixIfMultipart(requestBody));
                     info.setResponseBody(responseBody);
-
                     importedData.add(info);
                 } catch (Exception e) {
                     log.error("解析CSV行时出错: " + line, e);
@@ -2052,6 +2028,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private void testUnauthorizedAccess() {
         // 获取选中的请求
         final List<RequestResponseInfo> selectedData = new ArrayList<>();
+        //测试请求列表首页的选中数据
         synchronized (capturedData) {
             for (RequestResponseInfo info : capturedData) {
                 if (info.isSelected()) {
@@ -2094,7 +2071,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 for (int i = 0; i < selectedData.size(); i++) {
                     final RequestResponseInfo info = selectedData.get(i);
                     final int currentIndex = i;
-
                     // 更新进度
                     SwingUtilities.invokeLater(() -> {
                         int progress = (int) ((currentIndex * 100.0) / totalRequests);
@@ -2131,19 +2107,20 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         final int statusCode = responseInfo.getStatusCode();
 
                         // 获取请求头和响应头（直接使用接口方法获取原始内容）
-                        byte[] requestBytes = newResponse.getRequest();
+//                        byte[] requestBytes = newResponse.getRequest();
                         byte[] responseBytes2 = newResponse.getResponse();
 
-                        // 解析请求
-                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
-                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
+                        // 解析心情求的响应的请求
+//                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
+//                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
 
                         // 解析请求头和请求体
-                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
-                        String requestBodyStr = "";
-                        if (requestBytes.length > modifiedBodyOffset) {
-                            requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
-                        }
+
+//                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
+//                        String requestBodyStr = "";
+//                        if (requestBytes.length > modifiedBodyOffset) {
+//                            requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
+//                        }
 
                         // 解析响应头和响应体
                         String responseHeadersStr = "";
@@ -2174,8 +2151,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 statusCode,
                                 isVulnerable,
                                 needsConfirmation,
-                                requestHeadersStr,
-                                requestBodyStr,
+                                UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                info.getRequestBody(),
                                 responseHeadersStr,
                                 responseBodyStr
                         );
@@ -2537,7 +2514,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 if (choice == 0) {
                                     // 不添加这个头，相当于移除Referer
                                     modifiedReferer = "[已移除]";
-                                    continue;
                                 } else if (choice == 1) {
                                     // 使用自定义Referer
                                     newHeaders.add("Referer: " + customReferer);
@@ -2579,21 +2555,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         byte[] responseBytes = newResponse.getResponse();
                         IResponseInfo responseInfo = helpers.analyzeResponse(responseBytes);
                         final int statusCode = responseInfo.getStatusCode();
-
                         // 获取请求头和响应头
-                        byte[] requestBytes = newResponse.getRequest();
                         byte[] responseBytes2 = newResponse.getResponse();
-
-                        // 解析请求
-                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
-                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
-
-                        // 解析请求头和请求体
-                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
-                        String requestBodyStr = "";
-                        if (requestBytes.length > modifiedBodyOffset) {
-                            requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
-                        }
 
                         // 解析响应头和响应体
                         String responseHeadersStr = "";
@@ -2621,8 +2584,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 statusCode,
                                 isVulnerable,
                                 needsConfirmation,
-                                requestHeadersStr,
-                                requestBodyStr,
+                                UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                info.getRequestBody(),
                                 responseHeadersStr,
                                 responseBodyStr,
                                 modifiedReferer
@@ -2983,17 +2946,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 byte[] requestBytes = newResponse.getRequest();
                                 byte[] responseBytes2 = newResponse.getResponse();
 
-                                // 解析请求
-                                IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
-                                int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
-
-                                // 解析请求头和请求体
-                                String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
-                                String requestBodyStr = "";
-                                if (requestBytes.length > modifiedBodyOffset) {
-                                    requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
-                                }
-
                                 // 解析响应头和响应体
                                 String responseHeadersStr = "";
                                 String responseBodyStr = "";
@@ -3022,8 +2974,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         statusCode,
                                         isVulnerable,
                                         needsConfirmation,
-                                        requestHeadersStr,
-                                        requestBodyStr,
+                                        UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                        info.getRequestBody(),
                                         responseHeadersStr,
                                         responseBodyStr
                                 );
@@ -3406,8 +3358,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     testStatusCode,
                                     isVulnerable,
                                     needsConfirmation,
-                                    originalRequestHeaders,
-                                    originalRequestBody,
+                                    UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                    info.getRequestBody(),
                                     originalResponseHeaders,
                                     originalResponseBody,
                                     testRequestHeaders,
@@ -4539,18 +4491,18 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedDir = dirChooser.getSelectedFile();
             String dirPath = selectedDir.getAbsolutePath();
-            
+
             // 确保目录存在
             if (!selectedDir.exists()) {
                 selectedDir.mkdirs();
             }
-            
+
             // 检查目录是否为空
             File[] files = selectedDir.listFiles();
             if (files != null && files.length > 0) {
-                int confirm = JOptionPane.showConfirmDialog(mainPanel, 
-                    "所选目录不为空，可能会覆盖现有文件。是否继续？", 
-                    "确认", JOptionPane.YES_NO_OPTION);
+                int confirm = JOptionPane.showConfirmDialog(mainPanel,
+                        "所选目录不为空，可能会覆盖现有文件。是否继续？",
+                        "确认", JOptionPane.YES_NO_OPTION);
                 if (confirm != JOptionPane.YES_OPTION) {
                     log.info("用户取消了导出，因为目录不为空");
                     return;
@@ -4566,35 +4518,35 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             // 使用新线程进行导出，避免阻塞UI
             new Thread(() -> {
                 int successCount = 0;
-                
+
                 try {
                     for (int i = 0; i < selectedData.size(); i++) {
                         RequestResponseInfo info = selectedData.get(i);
-                        
+
                         // 更新进度条
                         final int currentIndex = i;
                         SwingUtilities.invokeLater(() -> {
                             progressBar.setValue(currentIndex + 1);
                             statusLabel.setText("正在导出 " + (currentIndex + 1) + "/" + selectedData.size() + " 个请求...");
                         });
-                        
+
                         // 生成文件名，使用递增的数字从1开始
                         String fileName = (i + 1) + ".txt";
                         File outputFile = new File(dirPath, fileName);
-                        
-                                                 try (FileWriter writer = new FileWriter(outputFile)) {
+
+                        try (FileWriter writer = new FileWriter(outputFile)) {
                             // 确保请求头按照HTTP标准格式化，每行一个头部字段
                             String requestHeaders = info.getRequestHeaders();
-                            
+
                             // 检查请求头是否已经包含正确的换行符
                             if (!requestHeaders.contains("\r\n")) {
                                 // 使用UrlUtil工具类进行格式化
                                 requestHeaders = UrlUtil.formatHttpHeaders(requestHeaders);
                             }
-                            
+
                             // 写入格式化后的请求头
                             writer.write(requestHeaders);
-                            
+
                             // 确保请求头和请求体之间有一个空行
                             if (!requestHeaders.endsWith("\r\n\r\n")) {
                                 if (requestHeaders.endsWith("\r\n")) {
@@ -4603,7 +4555,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     writer.write("\r\n\r\n");
                                 }
                             }
-                            
+
                             // 写入请求体
                             if (info.getRequestBody() != null && !info.getRequestBody().isEmpty()) {
                                 writer.write(info.getRequestBody());
@@ -4613,24 +4565,24 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             log.error("导出请求 " + info.getUrl() + " 失败: " + e.getMessage());
                         }
                     }
-                    
+
                     // 导出完成后更新UI
                     final int finalSuccessCount = successCount;
                     SwingUtilities.invokeLater(() -> {
                         progressBar.setVisible(false);
                         statusLabel.setText("就绪");
-                        JOptionPane.showMessageDialog(mainPanel, 
-                            "成功导出 " + finalSuccessCount + "/" + selectedData.size() + " 个请求到目录: " + dirPath, 
-                            "导出完成", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(mainPanel,
+                                "成功导出 " + finalSuccessCount + "/" + selectedData.size() + " 个请求到目录: " + dirPath,
+                                "导出完成", JOptionPane.INFORMATION_MESSAGE);
                     });
                     log.info("成功导出 {} 个请求到目录: {}", finalSuccessCount, dirPath);
-                    
+
                 } catch (Exception e) {
                     SwingUtilities.invokeLater(() -> {
                         progressBar.setVisible(false);
                         statusLabel.setText("导出失败");
-                        JOptionPane.showMessageDialog(mainPanel, 
-                            "导出失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(mainPanel,
+                                "导出失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                     });
                     log.error("导出失败", e);
                 }

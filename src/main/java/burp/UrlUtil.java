@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class UrlUtil {
@@ -44,7 +42,7 @@ public class UrlUtil {
      * @return 更新后的请求头
      */
     public static String updateRequestHeaders(String originalUrl, String newUrl, String headers,
-                                        boolean updateHost, boolean updateCookies, String cookieDomain) {
+                                              boolean updateHost, boolean updateCookies, String cookieDomain) {
         if (headers == null || headers.isEmpty()) {
             return headers;
         }
@@ -55,6 +53,7 @@ public class UrlUtil {
             URL parsedNewUrl = new URL(newUrl);
 
             String originalHost = parsedOriginalUrl.getHost();
+            int port = parsedOriginalUrl.getPort();
             String newHost = parsedNewUrl.getHost();
 
             // 如果请求头格式不正确，先格式化
@@ -88,6 +87,10 @@ public class UrlUtil {
                     // 保持其他头不变
                     updatedHeaders.append(line).append("\r\n");
                 }
+                if (line.toLowerCase().contains(originalHost + ":" + port)) {
+                    line.replaceAll(originalHost + ":" + port, newHost +":"+ parsedNewUrl.getPort());
+                }
+
             }
 
             return updatedHeaders.toString();
@@ -97,6 +100,7 @@ public class UrlUtil {
             return headers;  // 出错时返回原始头
         }
     }
+
     /**
      * 格式化HTTP请求头，使其更易读
      *
@@ -237,6 +241,7 @@ public class UrlUtil {
 
         return formatted.toString();
     }
+
     /**
      * 对URL进行规范化处理，用于去重
      * 默认移除参数部分以实现更好的去重效果
