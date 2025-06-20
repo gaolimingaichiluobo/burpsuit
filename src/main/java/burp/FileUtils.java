@@ -8,6 +8,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -46,45 +50,29 @@ public class FileUtils {
         return result.toArray(new String[0]);
     }
 
-    public static void exportToFile(String filePath, List<RequestResponseInfo> dataToExport) throws IOException {
-        log.info("开始导出数据，类型: CSV, 路径: {}", filePath);
-        // 使用UTF-8编码导出，确保中文正常显示
+
+    public static void exportToJsonFile(String filePath, List<RequestResponseInfo> dataToExport) throws IOException {
+        log.info("开始导出数据，类型: json, 路径: {}", filePath);
+        JSONArray jsonArray = new JSONArray();
+        for (RequestResponseInfo info : dataToExport) {
+            JSONObject obj = new JSONObject();
+            obj.put("id", info.getId());
+            obj.put("url", info.getUrl());
+            obj.put("method", info.getMethod());
+            obj.put("status", info.getStatusCode());
+            obj.put("requestHeaders", info.getRequestHeaders() != null ? info.getRequestHeaders() : "");
+            obj.put("requestBody", info.getRequestBody() != null ? info.getRequestBody() : "");
+            obj.put("responseBody", info.getResponseBody() != null ? info.getResponseBody() : "");
+            jsonArray.add(obj);
+        }
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 Files.newOutputStream(Paths.get(filePath)), StandardCharsets.UTF_8))) {
-            // 写入BOM标记，帮助Excel正确识别UTF-8编码
+            // 写入 UTF-8 BOM
             writer.write('\uFEFF');
-            // CSV标题行
-            StringBuilder headerLine = new StringBuilder("序号,请求URL,请求方法,状态码");
-            headerLine.append(",请求头");
-            headerLine.append(",请求体");
-            headerLine.append(",响应体");
-            writer.write(headerLine.toString());
-            writer.newLine();
-            // 写入数据
-            for (RequestResponseInfo info : dataToExport) {
-                StringBuilder line = new StringBuilder();
-                line.append(info.getId()).append(",");
-                line.append(escapeCsvField(info.getUrl())).append(",");
-                line.append(escapeCsvField(info.getMethod())).append(",");
-                line.append(escapeCsvField(String.valueOf(info.getStatusCode())));
-                line.append(",").append(escapeCsvField(info.getRequestHeaders()));
-                // 对请求体进行特殊处理，确保不会因为过长而导致问题
-                String requestBody = info.getRequestBody();
-                if (requestBody != null && requestBody.length() > 32767) { // Excel单元格字符限制
-                    requestBody = requestBody.substring(0, 32000) + "... [内容过长，已截断]";
-                }
-                line.append(",").append(escapeCsvField(requestBody));
-                // 对响应体进行特殊处理，确保不会因为过长而导致问题
-                String responseBody = info.getResponseBody();
-                if (responseBody != null && responseBody.length() > 32767) { // Excel单元格字符限制
-                    responseBody = responseBody.substring(0, 32000) + "... [内容过长，已截断]";
-                }
-                line.append(",").append(escapeCsvField(responseBody));
-                writer.write(line.toString());
-                writer.newLine();
-            }
+            // 美化格式输出 JSON
+            writer.write(jsonArray.toJSONString(JSONWriter.Feature.PrettyFormat));
         }
-        log.info("数据导出完成");
+        log.info("✅ JSON 导出完成:{} ", filePath);
     }
 
     /**

@@ -83,14 +83,16 @@ public class UrlUtil {
                     String newCookieHeader = "Cookie: " + cookieDomain;
                     updatedHeaders.append(newCookieHeader).append("\r\n");
                     log.info("直接替换Cookie头: " + newCookieHeader);
+
+                }
+                //处理其他携带地址的头
+                else if (line.toLowerCase().contains(originalHost)) {
+                    String newOriginHeader = line.replace(originalHost, newHost).replace(Integer.toString(port), Integer.toString(parsedNewUrl.getPort()));
+                    updatedHeaders.append(newOriginHeader).append("\r\n");
                 } else {
                     // 保持其他头不变
                     updatedHeaders.append(line).append("\r\n");
                 }
-                if (line.toLowerCase().contains(originalHost + ":" + port)) {
-                    line.replaceAll(originalHost + ":" + port, newHost +":"+ parsedNewUrl.getPort());
-                }
-
             }
 
             return updatedHeaders.toString();
@@ -242,6 +244,90 @@ public class UrlUtil {
         return formatted.toString();
     }
 
+
+    /**
+     * 替换URL中的主机和端口
+     */
+    public static String replaceHostAndPort(String url, String newHost, String newPort) {
+        try {
+            URL parsedUrl = new URL(url);
+            String protocol = parsedUrl.getProtocol();
+            String path = parsedUrl.getPath();
+            String query = parsedUrl.getQuery();
+
+            String newUrl = protocol + "://" + newHost + ":" + newPort;
+            if (path != null && !path.isEmpty()) {
+                newUrl += path;
+            }
+            if (query != null && !query.isEmpty()) {
+                newUrl += "?" + query;
+            }
+
+            log.info("URL替换: " + url + " -> " + newUrl);
+            return newUrl;
+        } catch (Exception e) {
+            log.error("替换URL主机和端口时出错: " + url, e);
+            return url;
+        }
+    }
+
+    /**
+     * 仅替换URL中的主机
+     */
+    public static String replaceHost(String url, String newHost) {
+        try {
+            URL parsedUrl = new URL(url);
+            String protocol = parsedUrl.getProtocol();
+            int port = parsedUrl.getPort();
+            String path = parsedUrl.getPath();
+            String query = parsedUrl.getQuery();
+
+            String newUrl = protocol + "://" + newHost;
+            if (port != -1) {
+                newUrl += ":" + port;
+            }
+            if (path != null && !path.isEmpty()) {
+                newUrl += path;
+            }
+            if (query != null && !query.isEmpty()) {
+                newUrl += "?" + query;
+            }
+
+            log.info("主机替换: " + url + " -> " + newUrl);
+            return newUrl;
+        } catch (Exception e) {
+            log.error("替换URL主机时出错: " + url, e);
+            return url;
+        }
+    }
+
+    /**
+     * 仅替换URL中的端口
+     */
+    public static String replacePort(String url, String newPort) {
+        try {
+            URL parsedUrl = new URL(url);
+            String protocol = parsedUrl.getProtocol();
+            String host = parsedUrl.getHost();
+            String path = parsedUrl.getPath();
+            String query = parsedUrl.getQuery();
+
+            String newUrl = protocol + "://" + host + ":" + newPort;
+            if (path != null && !path.isEmpty()) {
+                newUrl += path;
+            }
+            if (query != null && !query.isEmpty()) {
+                newUrl += "?" + query;
+            }
+
+            log.info("端口替换: " + url + " -> " + newUrl);
+            return newUrl;
+        } catch (Exception e) {
+            log.error("替换URL端口时出错: " + url, e);
+            return url;
+        }
+    }
+
     /**
      * 对URL进行规范化处理，用于去重
      * 默认移除参数部分以实现更好的去重效果
@@ -253,19 +339,15 @@ public class UrlUtil {
         if (url == null) {
             return "";
         }
-
         String normalizedUrl = url;
-
         // 移除URL参数
         if (normalizedUrl.contains("?")) {
             normalizedUrl = normalizedUrl.substring(0, normalizedUrl.indexOf("?"));
         }
-
         // 移除URL片段标识符(#)
         if (normalizedUrl.contains("#")) {
             normalizedUrl = normalizedUrl.substring(0, normalizedUrl.indexOf("#"));
         }
-
         // 标准化末尾的斜杠
         if (normalizedUrl.endsWith("/")) {
             normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length() - 1);

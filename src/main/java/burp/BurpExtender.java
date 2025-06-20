@@ -8,6 +8,9 @@ import burp.result.PrivilegeEscalationResult;
 import burp.result.UnsafeMethodTestResult;
 import burp.session.TestSession;
 import burp.utils.MultipartFixer;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,6 +29,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -1331,7 +1337,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 if (enableDeduplication) {
                     normalizedUrl = UrlUtil.normalizeUrlForDeduplication(url);
                 }
-
+                //加锁
                 synchronized (capturedData) {
                     // 如果启用了URL去重，检查是否已经存在相同的URL
                     if (enableDeduplication) {
@@ -1359,21 +1365,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     }
 
     /**
-     * 应用用户设置的过滤条件到表格中，包括请求方法和状态码过滤
-     */
-    /**
-     * 简化后的筛选方法，移除了请求方法和状态码筛选
-     */
-    private void applyFilters() {
-        TableRowSorter<RequestTableModel> sorter = new TableRowSorter<>(tableModel);
-        requestsTable.setRowSorter(sorter);
-
-        // 清除所有筛选条件
-        sorter.setRowFilter(null);
-        log.info("清除所有筛选条件");
-    }
-
-    /**
      * 清空已捕获的数据并刷新表格
      */
     private void clearData() {
@@ -1398,32 +1389,24 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 }
             }
         }
-
         if (selectedData.isEmpty()) {
             JOptionPane.showMessageDialog(mainPanel, "没有选择任何数据！", "错误", JOptionPane.ERROR_MESSAGE);
             log.warn("导出失败：没有选择任何数据");
             return;
         }
-
         JFileChooser fileChooser = new JFileChooser();
-
-        // 移除关于选择文件类型的代码，直接设置为CSV
-        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
-        fileChooser.setSelectedFile(new File("burp_export.csv"));
-
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON 文件 (*.json)", "json"));
+        fileChooser.setSelectedFile(new File("burp_export.json"));
         int result = fileChooser.showSaveDialog(mainPanel);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             String filePath = selectedFile.getAbsolutePath();
-
             // 确保文件扩展名正确
-            if (!filePath.toLowerCase().endsWith(".csv")) {
-                filePath += ".csv";
+            if (!filePath.toLowerCase().endsWith(".json")) {
+                filePath += ".json";
             }
-
-
             try {
-                FileUtils.exportToFile(filePath, selectedData);
+                FileUtils.exportToJsonFile(filePath, selectedData);
                 JOptionPane.showMessageDialog(mainPanel, "导出成功！", "信息", JOptionPane.INFORMATION_MESSAGE);
                 log.info("成功导出 {} 条记录到文件: {}", selectedData.size(), filePath);
             } catch (IOException e) {
@@ -1442,17 +1425,16 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private void importData() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("选择导入文件");
-        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
-
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON 文件 (*.json)", "json"));
         int result = fileChooser.showOpenDialog(mainPanel);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             try {
                 String fileName = selectedFile.getName().toLowerCase();
-                if (fileName.endsWith(".csv")) {
+                if (fileName.endsWith(".json")) {
                     importFromCSV(selectedFile.getAbsolutePath());
                 } else {
-                    JOptionPane.showMessageDialog(mainPanel, "不支持的文件格式，只支持CSV格式", "错误", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(mainPanel, "不支持的文件格式，只支持json格式", "错误", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(mainPanel, "导入失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -1466,11 +1448,11 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      * 从CSV文件导入数据
      */
     private void importFromCSV(String filePath) throws IOException {
-        log.info("开始从CSV文件导入数据: " + filePath);
+        log.info("开始从json文件导入数据: " + filePath);
         List<RequestResponseInfo> importedData = new ArrayList<>();
+
         String ip = ipTextField.getText().trim();
         String port = portTextField.getText().trim();
-
         // 创建cookie更新设置对话框
         boolean updateRequestHeaders = false;
         boolean updateCookies = false;
@@ -1530,194 +1512,78 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
         log.info("导入设置 - IP替换: " + (ip.isEmpty() ? "否" : ip) + ", 端口替换: " + (port.isEmpty() ? "否" : port));
 
-        // 使用支持多编码的文件读取方法
-        String[] lines = FileUtils.readFileWithMultipleEncodings(filePath);
 
-        if (lines.length == 0) {
-            log.error("CSV文件为空或无法读取");
-            return;
-        }
-
-        // 读取标题行，用于判断列的位置
-        String headerLine = lines[0];
-
-        // 移除可能存在的BOM标记
-        if (headerLine.startsWith("\uFEFF")) {
-            headerLine = headerLine.substring(1);
-            log.info("移除了标题行中的BOM标记");
-        }
-
-        log.info("CSV标题行: " + headerLine);
-
-        // 解析标题行，确定各个字段的索引位置
-        String[] headerFields = FileUtils.parseCSVLine(headerLine);
-        log.info("解析到" + headerFields.length + "列数据");
-
-        int urlIndex = -1;
-        int methodIndex = -1;
-        int statusCodeIndex = -1;
-        int requestHeadersIndex = -1;
-        int requestBodyIndex = -1;
-        int responseBodyIndex = -1;
-
-        // 尝试处理标题行可能的乱码情况
-        Map<Integer, String> columnTypes = identifyColumnsByContent(lines);
-
-        // 首先尝试通过列名识别
-        for (int i = 0; i < headerFields.length; i++) {
-            String field = headerFields[i].trim();
-            // 使用更宽松的匹配方式
-            if (containsAny(field.toLowerCase(), "url", "请求url", "璇锋眰url", "链接", "链接地址")) {
-                urlIndex = i;
-                log.info("找到URL列: " + i + " - " + field);
-            } else if (containsAny(field.toLowerCase(), "方法", "请求方法", "璇锋眰鏂规硶", "method", "http方法")) {
-                methodIndex = i;
-                log.info("找到请求方法列: " + i + " - " + field);
-            } else if (containsAny(field.toLowerCase(), "状态码", "鐘舵佺爜", "status", "code", "响应码")) {
-                statusCodeIndex = i;
-                log.info("找到状态码列: " + i + " - " + field);
-            } else if (containsAny(field.toLowerCase(), "请求头", "璇锋眰澶", "header", "request header")) {
-                requestHeadersIndex = i;
-                log.info("找到请求头列: " + i + " - " + field);
-            } else if (containsAny(field.toLowerCase(), "请求体", "璇锋眰浣", "body", "request body")) {
-                requestBodyIndex = i;
-                log.info("找到请求体列: " + i + " - " + field);
-            } else if (containsAny(field.toLowerCase(), "响应体", "鍝嶅簲浣", "response", "response body")) {
-                responseBodyIndex = i;
-                log.info("找到响应体列: " + i + " - " + field);
-            }
-        }
-
-        // 如果通过列名无法识别，尝试通过内容推断
-        if (urlIndex == -1 && columnTypes.containsValue("URL")) {
-            for (Map.Entry<Integer, String> entry : columnTypes.entrySet()) {
-                if ("URL".equals(entry.getValue())) {
-                    urlIndex = entry.getKey();
-                    log.info("通过内容推断找到URL列: " + urlIndex);
-                    break;
+        // 读取文件内容（去除 BOM）
+        StringBuilder jsonBuilder = new StringBuilder();
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(filePath), StandardCharsets.UTF_8)) {
+            int ch;
+            boolean isFirstChar = true;
+            while ((ch = reader.read()) != -1) {
+                if (isFirstChar && ch == 0xFEFF) {
+                    // 跳过 UTF-8 BOM
+                    continue;
                 }
+                isFirstChar = false;
+                jsonBuilder.append((char) ch);
             }
         }
+        String jsonContent = jsonBuilder.toString();
+        JSONArray array = JSON.parseArray(jsonContent);
 
-        if (methodIndex == -1 && columnTypes.containsValue("METHOD")) {
-            for (Map.Entry<Integer, String> entry : columnTypes.entrySet()) {
-                if ("METHOD".equals(entry.getValue())) {
-                    methodIndex = entry.getKey();
-                    log.info("通过内容推断找到请求方法列: " + methodIndex);
-                    break;
-                }
-            }
-        }
+        for (int i = 0; i < array.size(); i++) {
+            JSONObject obj = array.getJSONObject(i);
+            int id = capturedData.size() + importedData.size() + 1;
+            String method = obj.getString("method");
+            String url = obj.getString("url");
+            int statusCode = obj.getIntValue("status");
+            String requestHeaders = obj.getString("requestHeaders");
+            String requestBody = obj.getString("requestBody");
+            String responseBody = obj.getString("responseBody");
 
-        if (statusCodeIndex == -1 && columnTypes.containsValue("STATUS")) {
-            for (Map.Entry<Integer, String> entry : columnTypes.entrySet()) {
-                if ("STATUS".equals(entry.getValue())) {
-                    statusCodeIndex = entry.getKey();
-                    log.info("通过内容推断找到状态码列: " + statusCodeIndex);
-                    break;
-                }
-            }
-        }
-
-        // 检查必要的字段是否存在
-        if (urlIndex == -1 || methodIndex == -1 || statusCodeIndex == -1) {
-            log.error("CSV文件缺少必要的字段: URL, 请求方法或状态码");
-            JOptionPane.showMessageDialog(mainPanel,
-                    "无法识别CSV文件的必要列（URL、请求方法、状态码）。\n请确保CSV文件格式正确。",
-                    "导入错误",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        log.info("开始解析CSV数据行，URL索引=" + urlIndex + ", 方法索引=" + methodIndex + ", 状态码索引=" + statusCodeIndex);
-        int lineCount = 0;
-
-        // 处理每一行数据
-        for (int i = 1; i < lines.length; i++) {
-            String line = lines[i];
-            if (line.trim().isEmpty()) {
-                continue;
+            String originalUrl = url;
+            // 替换IP和端口（如果指定）
+            if (!ip.isEmpty() && !port.isEmpty()) {
+                url = UrlUtil.replaceHostAndPort(url, ip, port);
+                log.info("第" + i + 1 + "行 - 替换IP和端口: " + originalUrl + " -> " + url);
+            } else if (!ip.isEmpty()) {
+                url = UrlUtil.replaceHost(url, ip);
+                log.info("第" + i + 1 + "行 - 替换IP: " + originalUrl + " -> " + url);
+            } else if (!port.isEmpty()) {
+                url = UrlUtil.replacePort(url, port);
+                log.info("第" + i + 1 + "行 - 替换端口: " + originalUrl + " -> " + url);
             }
 
-            lineCount++;
-            log.info("正在处理第" + lineCount + "行数据");
-
-            // 使用自定义方法解析CSV行，考虑引号内的逗号
-            String[] fields = FileUtils.parseCSVLine(line);
-            log.info("解析到" + fields.length + "列数据");
-
-            if (fields.length > Math.max(Math.max(urlIndex, methodIndex), statusCodeIndex)) {
-                try {
-                    int id = capturedData.size() + importedData.size() + 1;
-                    String url = unescapeCsvField(fields[urlIndex]);
-                    log.info("第" + lineCount + "行 - 原始URL: " + url);
-
-                    String originalUrl = url;
-                    // 替换IP和端口（如果指定）
-                    if (!ip.isEmpty() && !port.isEmpty()) {
-                        url = replaceHostAndPort(url, ip, port);
-                        log.info("第" + lineCount + "行 - 替换IP和端口: " + originalUrl + " -> " + url);
-                    } else if (!ip.isEmpty()) {
-                        url = replaceHost(url, ip);
-                        log.info("第" + lineCount + "行 - 替换IP: " + originalUrl + " -> " + url);
-                    } else if (!port.isEmpty()) {
-                        url = replacePort(url, port);
-                        log.info("第" + lineCount + "行 - 替换端口: " + originalUrl + " -> " + url);
-                    }
-
-                    String method = unescapeCsvField(fields[methodIndex]);
-                    int statusCode = Integer.parseInt(unescapeCsvField(fields[statusCodeIndex]));
-                    log.info("第" + lineCount + "行 - 方法: " + method + ", 状态码: " + statusCode);
-
-                    // 获取可选字段
-                    String requestHeaders = requestHeadersIndex != -1 && fields.length > requestHeadersIndex ?
-                            unescapeCsvField(fields[requestHeadersIndex]) : "";
-                    String requestBody = requestBodyIndex != -1 && fields.length > requestBodyIndex ?
-                            unescapeCsvField(fields[requestBodyIndex]) : "";
-                    String responseBody = responseBodyIndex != -1 && fields.length > responseBodyIndex ?
-                            unescapeCsvField(fields[responseBodyIndex]) : "";
-                    log.info("第" + lineCount + "行 - 请求头长度: " + requestHeaders.length() +
-                            ", 请求体长度: " + requestBody.length() +
-                            ", 响应体长度: " + responseBody.length());
-
-                    // 处理请求头更新
-                    if (updateRequestHeaders || updateCookies) {
-                        requestHeaders = UrlUtil.updateRequestHeaders(
-                                originalUrl, url, requestHeaders,
-                                updateRequestHeaders, updateCookies, cookieDomain
-                        );
-                        log.info("第" + lineCount + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
-                                (updateCookies ? " Cookies" : ""));
-                    }
-
-                    // 创建一个临时的HTTP请求响应对象，使用格式化的请求头
-                    IHttpRequestResponse messageInfo = createFormattedHttpRequestResponse(
-                            url, statusCode, requestHeaders, requestBody, responseBody);
-                    RequestResponseInfo info = new RequestResponseInfo(this.helpers, messageInfo, id);
-
-                    // 手动设置一些字段
-                    info.setUrl(url);
-                    info.setMethod(method);
-                    info.setStatusCode(statusCode);
-                    info.setRequestHeaders(requestHeaders);
-                    info.setRequestBody(MultipartFixer.fixIfMultipart(requestBody));
-                    info.setResponseBody(responseBody);
-                    importedData.add(info);
-                } catch (Exception e) {
-                    log.error("解析CSV行时出错: " + line, e);
-                }
+            // 处理请求头更新
+            if (updateRequestHeaders || updateCookies) {
+                requestHeaders = UrlUtil.updateRequestHeaders(
+                        originalUrl, url, requestHeaders,
+                        updateRequestHeaders, updateCookies, cookieDomain
+                );
+                log.info("第" + i+1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
+                        (updateCookies ? " Cookies" : ""));
             }
-        }
 
+
+            IHttpRequestResponse messageInfo = createFormattedHttpRequestResponse(
+                    url, statusCode, requestHeaders, requestBody, responseBody);
+            RequestResponseInfo info = new RequestResponseInfo(this.helpers, messageInfo, id);
+            // 手动设置一些字段
+            info.setUrl(url);
+            info.setMethod(method);
+            info.setStatusCode(statusCode);
+            info.setRequestHeaders(requestHeaders);
+            info.setRequestBody(MultipartFixer.fixIfMultipart(requestBody));
+            info.setResponseBody(responseBody);
+            importedData.add(info);
+        }
         if (!importedData.isEmpty()) {
             capturedData.addAll(importedData);
-
-            // 清除所有筛选条件，确保导入的数据可见
-            applyFilters();
-
+            TableRowSorter<RequestTableModel> sorter = new TableRowSorter<>(tableModel);
+            requestsTable.setRowSorter(sorter);
+            // 清除所有筛选条件
+            sorter.setRowFilter(null);
             // 强制刷新表格
             tableModel.fireTableDataChanged();
-
             // 滚动到新导入的数据的位置
             if (requestsTable.getRowCount() > 0) {
                 int lastRow = requestsTable.getRowCount() - 1;
@@ -1725,174 +1591,14 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 选中最后导入的一行
                 requestsTable.setRowSelectionInterval(lastRow - importedData.size() + 1, lastRow);
             }
-
             // 切换到请求面板
             tabbedPane.setSelectedComponent(requestPanel);
-
             JOptionPane.showMessageDialog(mainPanel, "成功导入 " + importedData.size() + " 条记录", "导入成功", JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(mainPanel, "没有可导入的数据", "警告", JOptionPane.WARNING_MESSAGE);
         }
     }
 
-    /**
-     * 检查字符串是否包含任何给定的关键词
-     */
-    private boolean containsAny(String str, String... keywords) {
-        if (str == null) return false;
-        for (String keyword : keywords) {
-            if (keyword != null && str.contains(keyword)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 通过分析内容来识别CSV列的类型
-     */
-    private Map<Integer, String> identifyColumnsByContent(String[] lines) {
-        Map<Integer, String> columnTypes = new HashMap<>();
-
-        // 需要至少有2行数据（标题行+数据行）
-        if (lines.length < 2) {
-            return columnTypes;
-        }
-
-        // 解析第一个数据行
-        String[] fields = FileUtils.parseCSVLine(lines[1]);
-
-        // 遍历每一列，尝试识别类型
-        for (int i = 0; i < fields.length; i++) {
-            String value = fields[i].trim();
-
-            // 检测URL
-            if (value.startsWith("http://") || value.startsWith("https://")) {
-                columnTypes.put(i, "URL");
-                continue;
-            }
-
-            // 检测HTTP方法
-            if (value.equals("GET") || value.equals("POST") || value.equals("PUT") ||
-                    value.equals("DELETE") || value.equals("HEAD") || value.equals("OPTIONS")) {
-                columnTypes.put(i, "METHOD");
-                continue;
-            }
-
-            // 检测状态码
-            try {
-                int statusCode = Integer.parseInt(value);
-                if (statusCode >= 100 && statusCode < 600) {
-                    columnTypes.put(i, "STATUS");
-                }
-            } catch (NumberFormatException e) {
-                // 不是状态码，继续检测其他类型
-            }
-        }
-
-        return columnTypes;
-    }
-
-
-    /**
-     * 替换URL中的主机和端口
-     */
-    private String replaceHostAndPort(String url, String newHost, String newPort) {
-        try {
-            URL parsedUrl = new URL(url);
-            String protocol = parsedUrl.getProtocol();
-            String path = parsedUrl.getPath();
-            String query = parsedUrl.getQuery();
-
-            String newUrl = protocol + "://" + newHost + ":" + newPort;
-            if (path != null && !path.isEmpty()) {
-                newUrl += path;
-            }
-            if (query != null && !query.isEmpty()) {
-                newUrl += "?" + query;
-            }
-
-            log.info("URL替换: " + url + " -> " + newUrl);
-            return newUrl;
-        } catch (Exception e) {
-            log.error("替换URL主机和端口时出错: " + url, e);
-            return url;
-        }
-    }
-
-    /**
-     * 仅替换URL中的主机
-     */
-    private String replaceHost(String url, String newHost) {
-        try {
-            URL parsedUrl = new URL(url);
-            String protocol = parsedUrl.getProtocol();
-            int port = parsedUrl.getPort();
-            String path = parsedUrl.getPath();
-            String query = parsedUrl.getQuery();
-
-            String newUrl = protocol + "://" + newHost;
-            if (port != -1) {
-                newUrl += ":" + port;
-            }
-            if (path != null && !path.isEmpty()) {
-                newUrl += path;
-            }
-            if (query != null && !query.isEmpty()) {
-                newUrl += "?" + query;
-            }
-
-            log.info("主机替换: " + url + " -> " + newUrl);
-            return newUrl;
-        } catch (Exception e) {
-            log.error("替换URL主机时出错: " + url, e);
-            return url;
-        }
-    }
-
-    /**
-     * 仅替换URL中的端口
-     */
-    private String replacePort(String url, String newPort) {
-        try {
-            URL parsedUrl = new URL(url);
-            String protocol = parsedUrl.getProtocol();
-            String host = parsedUrl.getHost();
-            String path = parsedUrl.getPath();
-            String query = parsedUrl.getQuery();
-
-            String newUrl = protocol + "://" + host + ":" + newPort;
-            if (path != null && !path.isEmpty()) {
-                newUrl += path;
-            }
-            if (query != null && !query.isEmpty()) {
-                newUrl += "?" + query;
-            }
-
-            log.info("端口替换: " + url + " -> " + newUrl);
-            return newUrl;
-        } catch (Exception e) {
-            log.error("替换URL端口时出错: " + url, e);
-            return url;
-        }
-    }
-
-    /**
-     * 从CSV字段中解析字符串（反转义双引号等）
-     */
-    private String unescapeCsvField(String field) {
-        if (field == null) {
-            return "";
-        }
-
-        // 去掉前后的双引号
-        if (field.startsWith("\"") && field.endsWith("\"")) {
-            field = field.substring(1, field.length() - 1);
-        }
-
-        // 替换双引号转义
-        return field.replace("\"\"", "\"");
-    }
 
     /**
      * 创建HTTP服务对象
