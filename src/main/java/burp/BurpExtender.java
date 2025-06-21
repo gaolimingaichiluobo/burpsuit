@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static burp.FileUtils.escapeCsvField;
 
@@ -1559,13 +1560,13 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         originalUrl, url, requestHeaders,
                         updateRequestHeaders, updateCookies, cookieDomain
                 );
-                log.info("第" + i+1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
+                log.info("第" + i + 1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
                         (updateCookies ? " Cookies" : ""));
             }
-
-
             IHttpRequestResponse messageInfo = createFormattedHttpRequestResponse(
                     url, statusCode, requestHeaders, requestBody, responseBody);
+
+            log.debug("hascode:{}", messageInfo.hashCode());
             RequestResponseInfo info = new RequestResponseInfo(this.helpers, messageInfo, id);
             // 手动设置一些字段
             info.setUrl(url);
@@ -1762,16 +1763,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 创建独立线程处理HTTP请求，避免在EDT线程中执行
         new Thread(() -> {
             try {
-                // 设置控制台输出编码
-                try {
-                    System.setProperty("file.encoding", "UTF-8");
-                    java.lang.reflect.Field charset = java.nio.charset.Charset.class.getDeclaredField("defaultCharset");
-                    charset.setAccessible(true);
-                    charset.set(null, null);
-                } catch (Exception e) {
-                    log.error("设置编码失败: " + e.getMessage());
-                }
-
                 // 处理每个选中的请求
                 final int totalRequests = selectedData.size();
                 for (int i = 0; i < selectedData.size(); i++) {
@@ -1785,66 +1776,56 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     });
 
                     try {
-                        // 获取原始请求
+                        // 获取原始请求信息
                         IHttpRequestResponse messageInfo = info.getMessageInfo();
                         byte[] originalRequest = messageInfo.getRequest();
                         IRequestInfo requestInfo = helpers.analyzeRequest(originalRequest);
 
-                        // 使用helpers.removeParameter方法移除所有Cookie参数
-                        byte[] newRequest = originalRequest;
-                        List<IParameter> parameters = requestInfo.getParameters();
+// 复制请求体
+                        int bodyOffset = requestInfo.getBodyOffset();
+                        byte[] requestBody = Arrays.copyOfRange(originalRequest, bodyOffset, originalRequest.length);
 
-                        log.info("准备移除Cookie，重新发送请求: " + info.getUrl());
+// 构建新请求头，去掉 Cookie
+                        List<String> newHeaders = requestInfo.getHeaders().stream()
+                                .map(String::trim)
+                                .filter(header -> !header.toLowerCase().startsWith("cookie:"))
+                                .collect(Collectors.toList());
 
-                        // 从后向前移除所有Cookie参数，避免索引变化问题
-                        for (int j = parameters.size() - 1; j >= 0; j--) {
-                            IParameter param = parameters.get(j);
-                            if (param.getType() == IParameter.PARAM_COOKIE) {
-                                newRequest = helpers.removeParameter(newRequest, param);
-                            }
-                        }
+// 可选：保留空 Cookie
+                        newHeaders.add("Cookie:");
 
-                        // 发送新请求
-                        final IHttpRequestResponse newResponse = callbacks.makeHttpRequest(messageInfo.getHttpService(), newRequest);
+// 构造新的请求
+                        byte[] newRequest = helpers.buildHttpMessage(newHeaders, requestBody);
 
-                        // 分析响应
+// 发送新请求
+                        IHttpRequestResponse newResponse = callbacks.makeHttpRequest(messageInfo.getHttpService(), newRequest);
+
+// 提取新请求内容
+                        byte[] requestBytes = newResponse.getRequest();
+                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
+                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
+                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset, StandardCharsets.UTF_8);
+                        // 提取响应信息
                         byte[] responseBytes = newResponse.getResponse();
-                        IResponseInfo responseInfo = helpers.analyzeResponse(responseBytes);
-                        final int statusCode = responseInfo.getStatusCode();
-
-                        // 获取请求头和响应头（直接使用接口方法获取原始内容）
-//                        byte[] requestBytes = newResponse.getRequest();
-                        byte[] responseBytes2 = newResponse.getResponse();
-
-                        // 解析心情求的响应的请求
-//                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
-//                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
-
-                        // 解析请求头和请求体
-
-//                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
-//                        String requestBodyStr = "";
-//                        if (requestBytes.length > modifiedBodyOffset) {
-//                            requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
-//                        }
-
-                        // 解析响应头和响应体
                         String responseHeadersStr = "";
                         String responseBodyStr = "";
-                        if (responseBytes2 != null && responseBytes2.length > 0) {
-                            int responseBodyOffset = responseInfo.getBodyOffset();
-                            responseHeadersStr = new String(responseBytes2, 0, responseBodyOffset);
-                            responseBodyStr = new String(responseBytes2, responseBodyOffset, responseBytes2.length - responseBodyOffset);
-                        }
+                        int statusCode = -1;
 
+                        if (responseBytes != null && responseBytes.length > 0) {
+                            IResponseInfo responseInfo = helpers.analyzeResponse(responseBytes);
+                            int responseBodyOffset = responseInfo.getBodyOffset();
+                            statusCode = responseInfo.getStatusCode();
+
+                            responseHeadersStr = new String(responseBytes, 0, responseBodyOffset, StandardCharsets.UTF_8);
+                            responseBodyStr = new String(responseBytes, responseBodyOffset, responseBytes.length - responseBodyOffset, StandardCharsets.UTF_8);
+                        }
 
                         // 判断是否存在漏洞
                         VulnerabilityDetectionEngine.VulnerabilityResult result =
-                                vulnEngine.detectAuthVulnerability(statusCode, responseBytes2);
+                                vulnEngine.detectAuthVulnerability(statusCode, responseBytes);
 
                         final boolean isVulnerable = result.isVulnerable();
                         final boolean needsConfirmation = result.isNeedsConfirmation();
-
 
                         // 记录判断原因
                         log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" :
@@ -1857,13 +1838,14 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 statusCode,
                                 isVulnerable,
                                 needsConfirmation,
-                                UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                UrlUtil.formatHttpHeaders(requestHeadersStr),
                                 info.getRequestBody(),
                                 responseHeadersStr,
                                 responseBodyStr
                         );
 
                         // 创建新的记录并更新UI（在EDT线程中）
+                        int finalStatusCode = statusCode;
                         SwingUtilities.invokeLater(new Runnable() {
                             @Override
                             public void run() {
@@ -1880,7 +1862,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         existingResult.setRequestBody(testResult.getRequestBody());
                                         existingResult.setResponseHeaders(testResult.getResponseHeaders());
                                         existingResult.setResponseBody(testResult.getResponseBody());
-                                        log.info("更新已存在的测试结果 - URL: " + existingResult.getUrl());
+                                        log.info("更新已存在的测试结果 - URL: {}", existingResult.getUrl());
                                         break;
                                     }
                                 }
@@ -1904,11 +1886,11 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 if (isVulnerable) {
                                     resultMsg = "可能存在未授权访问漏洞";
                                 } else if (needsConfirmation) {
-                                    resultMsg = "需要人工确认（状态码: " + statusCode + "）";
+                                    resultMsg = "需要人工确认（状态码: " + finalStatusCode + "）";
                                 } else {
                                     resultMsg = "未授权访问测试失败";
                                 }
-                                log.info("未授权访问测试结果 - URL: " + info.getUrl() + ", 状态码: " + statusCode + ", 结果: " + resultMsg);
+                                log.info("未授权访问测试结果 - URL: " + info.getUrl() + ", 状态码: " + finalStatusCode + ", 结果: " + resultMsg);
                             }
                         });
 
@@ -2204,6 +2186,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         byte[] originalRequest = messageInfo.getRequest();
                         IRequestInfo requestInfo = helpers.analyzeRequest(originalRequest);
 
+
                         // 获取所有请求头
                         List<String> headers = requestInfo.getHeaders();
                         List<String> newHeaders = new ArrayList<>();
@@ -2261,8 +2244,21 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         byte[] responseBytes = newResponse.getResponse();
                         IResponseInfo responseInfo = helpers.analyzeResponse(responseBytes);
                         final int statusCode = responseInfo.getStatusCode();
+
                         // 获取请求头和响应头
+                        byte[] requestBytes = newResponse.getRequest();
                         byte[] responseBytes2 = newResponse.getResponse();
+
+                        // 解析请求
+                        IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
+                        int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
+
+                        // 解析请求头和请求体
+                        String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
+                        String requestBodyStr = "";
+                        if (requestBytes.length > modifiedBodyOffset) {
+                            requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
+                        }
 
                         // 解析响应头和响应体
                         String responseHeadersStr = "";
@@ -2290,7 +2286,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 statusCode,
                                 isVulnerable,
                                 needsConfirmation,
-                                UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                UrlUtil.formatHttpHeaders(requestHeadersStr),
                                 info.getRequestBody(),
                                 responseHeadersStr,
                                 responseBodyStr,
@@ -2652,6 +2648,15 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 byte[] requestBytes = newResponse.getRequest();
                                 byte[] responseBytes2 = newResponse.getResponse();
 
+                                // 解析请求
+                                IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
+                                int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
+
+                                // 解析请求头和请求体
+                                String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
+                                if (requestBytes.length > modifiedBodyOffset) {
+                                }
+
                                 // 解析响应头和响应体
                                 String responseHeadersStr = "";
                                 String responseBodyStr = "";
@@ -2680,7 +2685,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         statusCode,
                                         isVulnerable,
                                         needsConfirmation,
-                                        UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                        UrlUtil.formatHttpHeaders(requestHeadersStr),
                                         info.getRequestBody(),
                                         responseHeadersStr,
                                         responseBodyStr
@@ -3064,7 +3069,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     testStatusCode,
                                     isVulnerable,
                                     needsConfirmation,
-                                    UrlUtil.formatHttpHeaders(info.getRequestHeaders()),
+                                    UrlUtil.formatHttpHeaders(originalRequestHeaders),
                                     info.getRequestBody(),
                                     originalResponseHeaders,
                                     originalResponseBody,
@@ -4059,6 +4064,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 创建HTTP服务
         IHttpService httpService = createHttpService(url);
 
+//        helpers.buildHttpMessage(updatedHeaders, body);
         // 创建请求和响应字节
         byte[] requestBytes = createRequestBytes(formattedRequestHeaders, requestBody);
         byte[] responseBytes = createResponseBytes(statusCode, responseBody);

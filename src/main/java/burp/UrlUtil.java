@@ -194,10 +194,8 @@ public class UrlUtil {
                 pos += headerName.length();
             }
         }
-
         // 按位置排序
         Collections.sort(headerPositions);
-
         // 如果没有找到任何头部字段，尝试使用空格分割
         if (headerPositions.isEmpty()) {
             String[] parts = headers.split(" ");
@@ -209,12 +207,12 @@ public class UrlUtil {
                 // 检查是否是新的头部字段
                 if (part.endsWith(":")) {
                     // 如果当前已有内容，先添加到结果中
-                    if (currentHeader.length() > 0) {
-                        formatted.append(currentHeader.toString()).append("\r\n");
+                    if (!currentHeader.isEmpty()) {
+                        formatted.append(currentHeader).append("\r\n");
                         currentHeader = new StringBuilder();
                     }
                     currentHeader.append(part).append(" ");
-                } else if (part.contains(":") && currentHeader.length() == 0) {
+                } else if (part.contains(":") && currentHeader.isEmpty()) {
                     // 这可能是一个完整的头部字段
                     currentHeader.append(part);
                     formatted.append(currentHeader.toString()).append("\r\n");
@@ -226,8 +224,8 @@ public class UrlUtil {
             }
 
             // 添加最后一个头部字段
-            if (currentHeader.length() > 0) {
-                formatted.append(currentHeader.toString()).append("\r\n");
+            if (!currentHeader.isEmpty()) {
+                formatted.append(currentHeader).append("\r\n");
             }
         } else {
             // 根据找到的头部字段位置分割
