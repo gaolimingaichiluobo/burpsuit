@@ -11,7 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-import static burp.FileUtils.escapeCsvField;
+import static burp.utils.FileUtils.escapeCsvField;
 
 @Slf4j
 public class ExportResult {

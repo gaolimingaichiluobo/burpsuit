@@ -1,7 +1,6 @@
 package burp;
 
 import burp.export.ExportResult;
-import burp.http.DummyHttpRequestResponse;
 import burp.http.HttpServiceUtil;
 import burp.model.*;
 import burp.result.AuthTestResult;
@@ -9,7 +8,10 @@ import burp.result.CsrfTestResult;
 import burp.result.PrivilegeEscalationResult;
 import burp.result.UnsafeMethodTestResult;
 import burp.session.TestSession;
+import burp.utils.FileUtils;
+import burp.utils.KeyWordUtils;
 import burp.utils.MultipartFixer;
+import burp.utils.UrlUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -30,17 +32,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static burp.FileUtils.escapeCsvField;
 
 /**
  * Burp Suite扩展主类
@@ -1700,6 +1698,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
                         int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
                         String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset, StandardCharsets.UTF_8);
+                        String requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset, StandardCharsets.UTF_8);
+
                         // 提取响应信息
                         byte[] responseBytes = newResponse.getResponse();
                         String responseHeadersStr = "";
@@ -1734,7 +1734,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 isVulnerable,
                                 needsConfirmation,
                                 requestHeadersStr,
-                                info.getRequestBody(), //最好采用标准的
+                                requestBodyStr, //最好采用标准的
                                 responseHeadersStr,
                                 responseBodyStr
                         );

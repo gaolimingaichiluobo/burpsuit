@@ -1,8 +1,7 @@
 package burp;
 
+import burp.utils.UrlUtil;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
 public class RequestResponseInfo {
