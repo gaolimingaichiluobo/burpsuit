@@ -1,6 +1,8 @@
 package burp;
 
 import burp.export.ExportResult;
+import burp.http.DummyHttpRequestResponse;
+import burp.http.HttpServiceUtil;
 import burp.model.*;
 import burp.result.AuthTestResult;
 import burp.result.CsrfTestResult;
@@ -99,6 +101,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private JLabel statusLabel;
     // 在BurpExtender类中初始化引擎
     private VulnerabilityDetectionEngine vulnEngine;
+    private HttpServiceUtil httpServiceUtil;
     // URL过滤和去重相关
     private List<String> safeKeywords = new ArrayList<>();
     private List<String> authSafeKeywords = new ArrayList<>();  // 未授权测试安全关键词
@@ -138,6 +141,9 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 authSafeKeywords,
                 csrfSafeKeywords,
                 methodSafeKeywords
+        );
+        this.httpServiceUtil = new HttpServiceUtil(
+                helpers
         );
         callbacks.setExtensionName("安全手工测试辅助工具");
         callbacks.registerHttpListener(this);
@@ -1383,6 +1389,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      */
     private void exportData() {
         List<RequestResponseInfo> selectedData = new ArrayList<>();
+        //判断是否选中
         synchronized (capturedData) {
             for (RequestResponseInfo info : capturedData) {
                 if (info.isSelected()) {
@@ -1563,10 +1570,9 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 log.info("第" + i + 1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
                         (updateCookies ? " Cookies" : ""));
             }
-            IHttpRequestResponse messageInfo = createFormattedHttpRequestResponse(
+            IHttpRequestResponse messageInfo = httpServiceUtil.createFormattedHttpRequestResponse(
                     url, statusCode, requestHeaders, requestBody, responseBody);
 
-            log.debug("hascode:{}", messageInfo.hashCode());
             RequestResponseInfo info = new RequestResponseInfo(this.helpers, messageInfo, id);
             // 手动设置一些字段
             info.setUrl(url);
@@ -1600,123 +1606,11 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }
     }
 
-
-    /**
-     * 创建HTTP服务对象
-     */
-    private IHttpService createHttpService(String url) {
-        try {
-            URL parsedUrl = new URL(url);
-            final String protocol = parsedUrl.getProtocol();
-            final String host = parsedUrl.getHost();
-            final int port = parsedUrl.getPort() != -1 ? parsedUrl.getPort() :
-                    ("https".equalsIgnoreCase(protocol) ? 443 : 80);
-
-            return new IHttpService() {
-                @Override
-                public String getHost() {
-                    return host;
-                }
-
-                @Override
-                public int getPort() {
-                    return port;
-                }
-
-                @Override
-                public String getProtocol() {
-                    return protocol;
-                }
-            };
-        } catch (Exception e) {
-            log.error("创建HTTP服务对象时出错: " + url, e);
-            return null;
-        }
-    }
-
-    /**
-     * 创建请求字节数组，确保正确处理各种字符编码
-     */
-    private byte[] createRequestBytes(String headers, String body) {
-        try {
-            // 解析头部为List<String>
-            List<String> headersList = new ArrayList<>();
-            String[] headerLines = headers.split("\\r?\\n");
-            for (String header : headerLines) {
-                if (!header.trim().isEmpty()) {
-                    headersList.add(header);
-                }
-            }
-
-            // 使用Burp Suite的API来正确构建HTTP消息
-            byte[] bodyBytes = body != null ? body.getBytes("UTF-8") : new byte[0];
-            return helpers.buildHttpMessage(headersList, bodyBytes);
-        } catch (Exception e) {
-            log.error("创建请求字节时出错: " + e.getMessage());
-            // 出错时使用备用方法
-            try {
-                List<String> headersList = new ArrayList<>();
-                String[] headerLines = headers.split("\\r?\\n");
-                for (String header : headerLines) {
-                    if (!header.trim().isEmpty()) {
-                        headersList.add(header);
-                    }
-                }
-                return helpers.buildHttpMessage(headersList, body != null ? body.getBytes() : new byte[0]);
-            } catch (Exception ex) {
-                log.error("备用方法也失败: " + ex.getMessage());
-                // 最后的备用方法 - 直接返回原始头和体拼接
-                String request = headers + "\r\n\r\n" + (body != null ? body : "");
-                return request.getBytes();
-            }
-        }
-    }
-
-    /**
-     * 创建响应字节数组
-     */
-    private byte[] createResponseBytes(int statusCode, String body) {
-        String statusLine = "HTTP/1.1 " + statusCode + " " + getStatusText(statusCode) + "\r\n";
-        String headers = "Content-Type: text/html; charset=utf-8\r\n" +
-                "Content-Length: " + body.length() + "\r\n\r\n";
-        String response = statusLine + headers + body;
-        return response.getBytes();
-    }
-
     @Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
         return List.of();
     }
 
-    /**
-     * 虚拟HTTP请求响应实现类
-     */
-    private class DummyHttpRequestResponse implements IHttpRequestResponse {
-        private byte[] request;
-        private byte[] response;
-        private IHttpService httpService;
-
-        public DummyHttpRequestResponse(byte[] request, byte[] response, IHttpService httpService) {
-            this.request = request;
-            this.response = response;
-            this.httpService = httpService;
-        }
-
-        @Override
-        public byte[] getRequest() {
-            return request;
-        }
-
-        @Override
-        public byte[] getResponse() {
-            return response;
-        }
-
-        @Override
-        public IHttpService getHttpService() {
-            return httpService;
-        }
-    }
 
     /**
      * 清空未授权测试结果
@@ -1790,9 +1684,10 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 .map(String::trim)
                                 .filter(header -> !header.toLowerCase().startsWith("cookie:"))
                                 .collect(Collectors.toList());
-
 // 可选：保留空 Cookie
                         newHeaders.add("Cookie:");
+
+                        //todo 需要确定一下是否需要最后的换行  确定：需要
 
 // 构造新的请求
                         byte[] newRequest = helpers.buildHttpMessage(newHeaders, requestBody);
@@ -1838,8 +1733,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 statusCode,
                                 isVulnerable,
                                 needsConfirmation,
-                                UrlUtil.formatHttpHeaders(requestHeadersStr),
-                                info.getRequestBody(),
+                                requestHeadersStr,
+                                info.getRequestBody(), //最好采用标准的
                                 responseHeadersStr,
                                 responseBodyStr
                         );
@@ -3898,39 +3793,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     }
 
     /**
-     * 获取HTTP状态码对应的文本描述
-     */
-    private String getStatusText(int statusCode) {
-        switch (statusCode) {
-            case 200:
-                return "OK";
-            case 201:
-                return "Created";
-            case 204:
-                return "No Content";
-            case 301:
-                return "Moved Permanently";
-            case 302:
-                return "Found";
-            case 400:
-                return "Bad Request";
-            case 401:
-                return "Unauthorized";
-            case 403:
-                return "Forbidden";
-            case 404:
-                return "Not Found";
-            case 405:
-                return "Method Not Allowed";
-            case 500:
-                return "Internal Server Error";
-            default:
-                return "Unknown";
-        }
-    }
-
-
-    /**
      * 替换请求中的会话信息（Cookie/Authorization）
      *
      * @param request 原始请求
@@ -4051,27 +3913,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }
     }
 
-
-    /**
-     * 创建一个临时的HTTP请求响应对象，并格式化请求头
-     */
-    private IHttpRequestResponse createFormattedHttpRequestResponse(String url, int statusCode,
-                                                                    String requestHeaders, String requestBody,
-                                                                    String responseBody) {
-        // 格式化请求头
-        String formattedRequestHeaders = UrlUtil.formatHttpHeaders(requestHeaders);
-
-        // 创建HTTP服务
-        IHttpService httpService = createHttpService(url);
-
-//        helpers.buildHttpMessage(updatedHeaders, body);
-        // 创建请求和响应字节
-        byte[] requestBytes = createRequestBytes(formattedRequestHeaders, requestBody);
-        byte[] responseBytes = createResponseBytes(statusCode, responseBody);
-
-        // 返回HTTP请求响应对象
-        return new DummyHttpRequestResponse(requestBytes, responseBytes, httpService);
-    }
 
     /**
      * 保存设置到Burp Suite配置中
