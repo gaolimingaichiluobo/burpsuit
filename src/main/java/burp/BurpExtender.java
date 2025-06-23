@@ -1,5 +1,6 @@
 package burp;
 
+import burp.Engine.VulnerabilityDetectionEngine;
 import burp.export.ExportResult;
 import burp.http.HttpServiceUtil;
 import burp.model.*;
@@ -192,24 +193,18 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
                 // 添加测试未授权访问的按钮
                 testAuthButton = new JButton("测试未授权访问");
-                testAuthButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        // 先清空现有的测试结果
-                        clearAuthTestResults();
-                        testUnauthorizedAccess();
-                    }
+                testAuthButton.addActionListener(e -> {
+                    // 先清空现有的测试结果
+                    clearAuthTestResults();
+                    testUnauthorizedAccess();
                 });
 
                 // 添加测试CSRF的按钮
                 testCsrfButton = new JButton("测试CSRF漏洞");
-                testCsrfButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        // 先清空现有的测试结果
-                        clearCsrfTestResults();
-                        testCsrfVulnerability();
-                    }
+                testCsrfButton.addActionListener(e -> {
+                    // 先清空现有的测试结果
+                    clearCsrfTestResults();
+                    testCsrfVulnerability();
                 });
 
                 // 添加测试不安全HTTP方法的按钮
@@ -1400,7 +1395,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }
     }
 
-
     /**
      * 导入请求数据
      */
@@ -1424,7 +1418,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             }
         }
     }
-
 
     /**
      * 从CSV文件导入数据
@@ -2027,7 +2020,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }, "CsrfVulnerabilityTester").start();
     }
 
-
     /**
      * 测试不安全HTTP方法漏洞
      * 通过将原始请求方法更改为PUT、DELETE、HEAD等方法，检测服务器是否存在不当处理
@@ -2274,7 +2266,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }, "UnsafeHttpMethodTester").start();
     }
 
-
     /**
      * 执行越权测试
      *
@@ -2484,7 +2475,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }, "PrivilegeEscalationTester").start();
     }
 
-
     /**
      * 应用排除过滤条件到已捕获的数据
      */
@@ -2590,7 +2580,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }
     }
 
-
     /**
      * 批量确认选中的未授权测试结果
      */
@@ -2633,7 +2622,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 更新表格
         authTestTableModel.fireTableDataChanged();
     }
-
 
     /**
      * 清空CSRF测试结果
@@ -2764,7 +2752,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }
     }
 
-
     /**
      * 清空不安全HTTP方法测试结果
      */
@@ -2775,7 +2762,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         unsafeMethodResponseViewer.setText("");
         log.info("已清空不安全HTTP方法测试结果");
     }
-
 
     /**
      * 确认不安全HTTP方法测试结果
@@ -2893,10 +2879,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             log.info("用户取消了文件选择");
         }
     }
-
-    /**
-     * 创建越权测试面板
-     */
 
     /**
      * 生成会话字符串

@@ -1,5 +1,9 @@
-package burp;
+package burp.model;
 
+import burp.IExtensionHelpers;
+import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IResponseInfo;
 import burp.utils.UrlUtil;
 import lombok.Data;
 

@@ -2,7 +2,6 @@ package burp.result;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 /**
  * 未授权测试结果类

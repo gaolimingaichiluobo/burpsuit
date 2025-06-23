@@ -111,11 +111,4 @@ public class MultipartFixer {
         }
         return result.toString();
     }
-
-    // 可选：用于命令行调试
-    public static void main(String[] args) {
-        String raw = "------WebKitFormBoundaryRpf15cVnRoeBmbL6 Content-Disposition: form-data; name=\"id\"  9 ------WebKitFormBoundaryRpf15cVnRoeBmbL6-- ";
-        String fixed = fixIfMultipart(raw);
-        System.out.println("修复结果：\n" + fixed);
-    }
 }
