@@ -286,8 +286,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     } else {
                         log.info("URL去重功能已开启");
                     }
-                    // 保存设置
-                    saveSettings();
                 });
 
                 JButton clearButton = new JButton("清空列表");
@@ -306,7 +304,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
                 // 重置gridwidth
                 gbc.gridwidth = 1;
-                gbc.weightx = 0.0;
 
                 // 第四行：排除后缀
                 gbc.gridx = 0;
@@ -314,30 +311,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 gbc.weightx = 0;
                 JLabel excludeLabel = new JLabel("排除后缀(用逗号分隔):");
                 excludeExtensionsField = new JTextField("css,js,png,jpg,jpeg,gif,webp,svg,ico,woff,woff2,ttf,eot,mp3,mp4,wav,ogg,avi,mov,wmv,flv,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,gz,bmp,tif,tiff,swf,map", 30);
-                excludeExtensionsField.getDocument().addDocumentListener(new DocumentListener() {
-                    @Override
-                    public void insertUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-
-                    @Override
-                    public void removeUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-
-                    @Override
-                    public void changedUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-                });
-
                 JButton applyExcludeButton = new JButton("应用过滤");
-                applyExcludeButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        applyExcludeFilter();
-                    }
-                });
+                applyExcludeButton.addActionListener(e -> applyExcludeFilter());
 
                 // 创建第四行面板：排除后缀
                 JPanel fourthRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
@@ -362,23 +337,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 gbc.fill = GridBagConstraints.NONE;
                 JLabel excludeUrlLabel = new JLabel("排除URL关键词(用逗号分隔):");
                 excludeUrlKeywordsField = new JTextField("check_", 30);
-                excludeUrlKeywordsField.getDocument().addDocumentListener(new DocumentListener() {
-                    @Override
-                    public void insertUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-
-                    @Override
-                    public void removeUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-
-                    @Override
-                    public void changedUpdate(DocumentEvent e) {
-                        saveSettings();
-                    }
-                });
-
                 JButton applyUrlExcludeButton = new JButton("应用过滤");
                 applyUrlExcludeButton.addActionListener(new ActionListener() {
                     @Override
@@ -405,8 +363,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 重置fill和gridwidth
                 gbc.fill = GridBagConstraints.NONE;
                 gbc.gridwidth = 1;
-
-                // 第六行已被移除（请求方法和状态码过滤）
 
                 // 创建表格模型
                 tableModel = new RequestTableModel(capturedData);
@@ -1242,11 +1198,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 mainPanel.add(statusPanel, BorderLayout.SOUTH);
                 // 注册扩展的选项卡
                 callbacks.addSuiteTab(BurpExtender.this);
-
                 log.info("UI初始化完成");
-
-                // 加载保存的设置
-                loadSettings();
             }
         });
 
@@ -1582,6 +1534,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      * 测试未授权访问，移除Cookie后重新发送请求
      */
     private void testUnauthorizedAccess() {
+        //更新安全关键词
+        vulnEngine.setGeneralSafeKeywords(authSafeKeywords);
         // 获取选中的请求
         final List<RequestResponseInfo> selectedData = new ArrayList<>();
         //测试请求列表首页的选中数据
@@ -1775,6 +1729,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      * 测试CSRF漏洞，修改Referer后重新发送请求
      */
     private void testCsrfVulnerability() {
+        vulnEngine.setCsrfSafeKeywords(csrfSafeKeywords);
         // 获取选中的请求
         final List<RequestResponseInfo> selectedData = new ArrayList<>();
         synchronized (capturedData) {
@@ -2025,6 +1980,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      * 通过将原始请求方法更改为PUT、DELETE、HEAD等方法，检测服务器是否存在不当处理
      */
     private void testUnsafeHttpMethods() {
+        vulnEngine.setMethodSafeKeywords(methodSafeKeywords);
         // 获取选中的请求
         final List<RequestResponseInfo> selectedData = new ArrayList<>();
         synchronized (capturedData) {
@@ -2500,7 +2456,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             tableModel.fireTableDataChanged();
 
             int removedCount = originalSize - capturedData.size();
-            log.info("应用排除过滤，移除了 " + removedCount + " 条记录，剩余 " + capturedData.size() + " 条记录");
+            log.info("应用排除过滤，移除了 {} 条记录，剩余 {} 条记录", removedCount, capturedData.size());
             JOptionPane.showMessageDialog(mainPanel, "过滤完成，移除了 " + removedCount + " 条记录", "信息", JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -3285,6 +3241,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     safeKeywords.add(keyword.trim().toLowerCase());
                 }
             }
+            //更新安全关键词
+            vulnEngine.setGeneralSafeKeywords(safeKeywords);
 
             // 将会话列表转换为ArrayList
             List<TestSession> sessions = new ArrayList<>();
@@ -3357,7 +3315,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
         // 创建结果表格控制面板
         JPanel resultControlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
         JButton clearResultsButton = new JButton("清空结果");
         JButton exportResultsButton = new JButton("导出结果");
         JButton confirmButton = new JButton("确认漏洞");
@@ -3632,108 +3589,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         privilegeEscalationPanel.add(resultSplitPane, BorderLayout.CENTER);
     }
 
-
-    /**
-     * 保存设置到Burp Suite配置中
-     */
-    private void saveSettings() {
-        try {
-            // 保存排除后缀
-            callbacks.saveExtensionSetting("exclude_extensions", excludeExtensionsField.getText());
-
-            // 保存排除URL关键词
-            callbacks.saveExtensionSetting("exclude_url_keywords", excludeUrlKeywordsField.getText());
-
-            // 保存安全词列表
-            if (safeKeywords != null && !safeKeywords.isEmpty()) {
-                callbacks.saveExtensionSetting("safe_keywords", String.join(",", safeKeywords));
-            }
-
-            // 保存未授权安全词列表
-            if (authSafeKeywords != null && !authSafeKeywords.isEmpty()) {
-                callbacks.saveExtensionSetting("auth_safe_keywords", String.join(",", authSafeKeywords));
-            }
-
-            // 保存CSRF安全词列表
-            if (csrfSafeKeywords != null && !csrfSafeKeywords.isEmpty()) {
-                callbacks.saveExtensionSetting("csrf_safe_keywords", String.join(",", csrfSafeKeywords));
-            }
-
-            // 保存方法安全词列表
-            if (methodSafeKeywords != null && !methodSafeKeywords.isEmpty()) {
-                callbacks.saveExtensionSetting("method_safe_keywords", String.join(",", methodSafeKeywords));
-            }
-
-            // 保存URL去重开关状态
-            callbacks.saveExtensionSetting("enable_url_deduplication", String.valueOf(enableUrlDeduplicationCheckBox.isSelected()));
-
-            log.info("设置已保存");
-        } catch (Exception e) {
-            log.error("保存设置失败: " + e.getMessage());
-        }
-    }
-
-    private void loadSettings() {
-        try {
-            // 加载排除后缀
-            String excludeExts = callbacks.loadExtensionSetting("exclude_extensions");
-            if (excludeExts != null && !excludeExts.isEmpty()) {
-                excludeExtensionsField.setText(excludeExts);
-                log.info("已加载排除后缀设置");
-            }
-
-            // 加载排除URL关键词
-            String excludeKeywords = callbacks.loadExtensionSetting("exclude_url_keywords");
-            if (excludeKeywords != null && !excludeKeywords.isEmpty()) {
-                excludeUrlKeywordsField.setText(excludeKeywords);
-                log.info("已加载排除URL关键词设置");
-            }
-
-            // 加载安全词列表
-            String safeKeywordsStr = callbacks.loadExtensionSetting("safe_keywords");
-            if (safeKeywordsStr != null && !safeKeywordsStr.isEmpty()) {
-                safeKeywords.clear();
-                safeKeywords.addAll(Arrays.asList(safeKeywordsStr.split(",")));
-                log.info("已加载安全词列表，共 " + safeKeywords.size() + " 个词");
-            }
-
-            // 加载未授权安全词列表
-            String authSafeKeywordsStr = callbacks.loadExtensionSetting("auth_safe_keywords");
-            if (authSafeKeywordsStr != null && !authSafeKeywordsStr.isEmpty()) {
-                authSafeKeywords.clear();
-                authSafeKeywords.addAll(Arrays.asList(authSafeKeywordsStr.split(",")));
-                log.info("已加载未授权安全词列表，共 " + authSafeKeywords.size() + " 个词");
-            }
-
-            // 加载CSRF安全词列表
-            String csrfSafeKeywordsStr = callbacks.loadExtensionSetting("csrf_safe_keywords");
-            if (csrfSafeKeywordsStr != null && !csrfSafeKeywordsStr.isEmpty()) {
-                csrfSafeKeywords.clear();
-                csrfSafeKeywords.addAll(Arrays.asList(csrfSafeKeywordsStr.split(",")));
-                log.info("已加载CSRF安全词列表，共 " + csrfSafeKeywords.size() + " 个词");
-            }
-
-            // 加载方法安全词列表
-            String methodSafeKeywordsStr = callbacks.loadExtensionSetting("method_safe_keywords");
-            if (methodSafeKeywordsStr != null && !methodSafeKeywordsStr.isEmpty()) {
-                methodSafeKeywords.clear();
-                methodSafeKeywords.addAll(Arrays.asList(methodSafeKeywordsStr.split(",")));
-                log.info("已加载方法安全词列表，共 " + methodSafeKeywords.size() + " 个词");
-            }
-
-            // 加载URL去重开关状态
-            String enableUrlDedup = callbacks.loadExtensionSetting("enable_url_deduplication");
-            if (enableUrlDedup != null) {
-                boolean enabled = Boolean.parseBoolean(enableUrlDedup);
-                enableUrlDeduplicationCheckBox.setSelected(enabled);
-                log.info("已加载URL去重开关状态: " + (enabled ? "开启" : "关闭"));
-            }
-
-            log.info("设置加载完成");
-        } catch (Exception e) {
-            log.error("加载设置失败: " + e.getMessage());
-        }
-    }
 
     /**
      * 导出请求为sqlmap格式（每个请求一个txt文件）
