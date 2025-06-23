@@ -3,11 +3,11 @@ package burp.http;
 import burp.IExtensionHelpers;
 import burp.IHttpRequestResponse;
 import burp.IHttpService;
+import burp.IRequestInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class HttpServiceUtil {
@@ -50,6 +50,104 @@ public class HttpServiceUtil {
         }
     }
 
+    /**
+     * 替换请求中的会话信息（Cookie/Authorization）
+     *
+     * @param request 原始请求
+     * @param session 会话信息字符串
+     * @return 替换后的请求
+     */
+    public byte[] replaceSessionInRequest(byte[] request, String session) {
+        if (session == null || session.trim().isEmpty()) {
+            return request;
+        }
+
+        try {
+            IRequestInfo requestInfo = helpers.analyzeRequest(request);
+            List<String> headers = requestInfo.getHeaders();
+            List<String> newHeaders = new ArrayList<>();
+            boolean cookieReplaced = false;
+
+            // 解析会话格式 - 支持Cookie和Authorization头
+            Map<String, String> cookieMap = new HashMap<>();
+
+            // 提取会话中的Cookie和Authorization信息
+            if (session.contains("Cookie:")) {
+                String cookiePart = session.substring(session.indexOf("Cookie:"));
+                if (cookiePart.contains("\n")) {
+                    cookiePart = cookiePart.substring(0, cookiePart.indexOf("\n"));
+                }
+                cookiePart = cookiePart.substring("Cookie:".length()).trim();
+
+                // 解析Cookie键值对
+                String[] cookies = cookiePart.split(";");
+                for (String cookie : cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.isEmpty()) continue;
+
+                    if (cookie.contains("=")) {
+                        String[] parts = cookie.split("=", 2);
+                        cookieMap.put(parts[0].trim(), parts.length > 1 ? parts[1].trim() : "");
+                    } else {
+                        // 处理不包含等号的Cookie（如标志性Cookie）
+                        cookieMap.put(cookie, "");
+                    }
+                }
+            }
+
+            // 替换请求头
+            for (String header : headers) {
+                if (header.toLowerCase().startsWith("cookie:") && !cookieMap.isEmpty()) {
+                    // 替换Cookie头
+                    StringBuilder newCookie = new StringBuilder("Cookie: ");
+                    boolean first = true;
+                    for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
+                        if (!first) {
+                            newCookie.append("; ");
+                        }
+                        if (entry.getValue().isEmpty()) {
+                            newCookie.append(entry.getKey());
+                        } else {
+                            newCookie.append(entry.getKey()).append("=").append(entry.getValue());
+                        }
+                        first = false;
+                    }
+                    newHeaders.add(newCookie.toString());
+                    cookieReplaced = true;
+                    log.info("已替换Cookie: {}", newCookie.toString());
+                } else {
+                    // 保留其他头
+                    newHeaders.add(header);
+                }
+            }
+
+            // 如果原请求没有Cookie头但会话中有Cookie，添加新的Cookie头
+            if (!cookieReplaced && !cookieMap.isEmpty()) {
+                StringBuilder newCookie = new StringBuilder("Cookie: ");
+                boolean first = true;
+                for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
+                    if (!first) {
+                        newCookie.append("; ");
+                    }
+                    if (entry.getValue().isEmpty()) {
+                        newCookie.append(entry.getKey());
+                    } else {
+                        newCookie.append(entry.getKey()).append("=").append(entry.getValue());
+                    }
+                    first = false;
+                }
+                newHeaders.add(newCookie.toString());
+                log.info("已添加新Cookie: {}", newCookie.toString());
+            }
+            // 重建请求
+            int bodyOffset = requestInfo.getBodyOffset();
+            byte[] body = Arrays.copyOfRange(request, bodyOffset, request.length);
+            return helpers.buildHttpMessage(newHeaders, body);
+        } catch (Exception e) {
+            log.error("替换会话信息时出错: {}", e.getMessage(), e);
+            return request; // 出错时返回原始请求
+        }
+    }
     /**
      * 创建请求字节数组，确保正确处理各种字符编码
      */

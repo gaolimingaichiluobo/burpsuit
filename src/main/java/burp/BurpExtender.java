@@ -133,16 +133,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         this.csrfSafeKeywords = new ArrayList<>();
         this.methodSafeKeywords = new ArrayList<>();
 
-        this.vulnEngine = new VulnerabilityDetectionEngine(
-                helpers,
-                safeKeywords,
-                authSafeKeywords,
-                csrfSafeKeywords,
-                methodSafeKeywords
-        );
-        this.httpServiceUtil = new HttpServiceUtil(
-                helpers
-        );
+        this.vulnEngine = new VulnerabilityDetectionEngine(helpers, safeKeywords, authSafeKeywords, csrfSafeKeywords, methodSafeKeywords);
+        this.httpServiceUtil = new HttpServiceUtil(helpers);
         callbacks.setExtensionName("安全手工测试辅助工具");
         callbacks.registerHttpListener(this);
 
@@ -240,9 +232,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         tabbedPane.setSelectedComponent(privilegeEscalationPanel);
 
                         // 显示提示信息
-                        JOptionPane.showMessageDialog(mainPanel,
-                                "请求已成功添加到越权测试模块。\n请在越权测试模块中配置会话和测试参数，然后点击开始测试。",
-                                "信息", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(mainPanel, "请求已成功添加到越权测试模块。\n请在越权测试模块中配置会话和测试参数，然后点击开始测试。", "信息", JOptionPane.INFORMATION_MESSAGE);
                     }
                 });
 
@@ -441,8 +431,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置状态码列的渲染器，根据状态码显示不同颜色
                 requestsTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -516,8 +505,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置状态码列的渲染器
                 authTestResultsTable.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -542,8 +530,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置测试结果列的渲染器
                 authTestResultsTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -564,8 +551,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 添加整行颜色渲染的表格渲染器
                 authTestResultsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -596,8 +582,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             int row = authTestResultsTable.convertRowIndexToModel(authTestResultsTable.getSelectedRow());
                             if (row >= 0 && row < authTestResults.size()) {
                                 AuthTestResult result = authTestResults.get(row);
-                                requestViewer.setText(result.getRequestHeaders() + "\n\n" + result.getRequestBody());
-                                responseViewer.setText(result.getResponseHeaders() + "\n\n" + result.getResponseBody());
+                                requestViewer.setText(result.getRequestHeaders() + result.getRequestBody());
+                                responseViewer.setText(result.getResponseHeaders() + result.getResponseBody());
                             }
                         }
                     }
@@ -731,8 +717,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 authTestDetailSplitPane.setResizeWeight(0.5);
 
                 // 创建主分割面板
-                JSplitPane authTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                        new JScrollPane(authTestResultsTable), authTestDetailSplitPane);
+                JSplitPane authTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(authTestResultsTable), authTestDetailSplitPane);
                 authTestSplitPane.setResizeWeight(0.5);
 
                 // 将控制面板和分割面板添加到未授权测试面板
@@ -758,8 +743,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置状态码列的渲染器
                 csrfTestResultsTable.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -784,8 +768,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置测试结果列的渲染器
                 csrfTestResultsTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -806,8 +789,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 添加整行颜色渲染的表格渲染器
                 csrfTestResultsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -838,8 +820,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             int row = csrfTestResultsTable.convertRowIndexToModel(csrfTestResultsTable.getSelectedRow());
                             if (row >= 0 && row < csrfTestResults.size()) {
                                 CsrfTestResult result = csrfTestResults.get(row);
-                                csrfRequestViewer.setText(result.getRequestHeaders() + "\n\n" + result.getRequestBody());
-                                csrfResponseViewer.setText(result.getResponseHeaders() + "\n\n" + result.getResponseBody());
+                                csrfRequestViewer.setText(result.getRequestHeaders() + result.getRequestBody());
+                                csrfResponseViewer.setText(result.getResponseHeaders() + result.getResponseBody());
                             }
                         }
                     }
@@ -974,8 +956,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 csrfTestDetailSplitPane.setResizeWeight(0.5);
 
                 // 创建主分割面板
-                JSplitPane csrfTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                        new JScrollPane(csrfTestResultsTable), csrfTestDetailSplitPane);
+                JSplitPane csrfTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(csrfTestResultsTable), csrfTestDetailSplitPane);
                 csrfTestSplitPane.setResizeWeight(0.5);
 
                 // 将控制面板和分割面板添加到CSRF测试面板
@@ -1000,8 +981,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置状态码列的渲染器
                 unsafeMethodResultsTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -1040,8 +1020,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 设置测试结果列的渲染器
                 unsafeMethodResultsTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -1062,8 +1041,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 添加整行颜色渲染的表格渲染器
                 unsafeMethodResultsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
                     @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value,
-                                                                   boolean isSelected, boolean hasFocus, int row, int column) {
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                         if (!isSelected) {
@@ -1094,8 +1072,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             int row = unsafeMethodResultsTable.convertRowIndexToModel(unsafeMethodResultsTable.getSelectedRow());
                             if (row >= 0 && row < unsafeMethodTestResults.size()) {
                                 UnsafeMethodTestResult result = unsafeMethodTestResults.get(row);
-                                unsafeMethodRequestViewer.setText(result.getRequestHeaders() + "\n\n" + result.getRequestBody());
-                                unsafeMethodResponseViewer.setText(result.getResponseHeaders() + "\n\n" + result.getResponseBody());
+                                unsafeMethodRequestViewer.setText(result.getRequestHeaders() + result.getRequestBody());
+                                unsafeMethodResponseViewer.setText(result.getResponseHeaders() + result.getResponseBody());
                             }
                         }
                     }
@@ -1230,8 +1208,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 unsafeMethodTestDetailSplitPane.setResizeWeight(0.5);
 
                 // 创建主分割面板
-                JSplitPane unsafeMethodTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                        new JScrollPane(unsafeMethodResultsTable), unsafeMethodTestDetailSplitPane);
+                JSplitPane unsafeMethodTestSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(unsafeMethodResultsTable), unsafeMethodTestDetailSplitPane);
                 unsafeMethodTestSplitPane.setResizeWeight(0.5);
 
                 // 将控制面板和分割面板添加到不安全HTTP方法测试面板
@@ -1318,8 +1295,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 String url = requestInfo.getUrl().toString();
 
                 // 检查是否应该排除此URL（基于扩展名和关键词）
-                if (KeyWordUtils.shouldExcludeUrl(url, excludeExtensionsField.getText()) ||
-                        KeyWordUtils.shouldExcludeUrlByKeywords(url, excludeUrlKeywordsField.getText())) {
+                if (KeyWordUtils.shouldExcludeUrl(url, excludeExtensionsField.getText()) || KeyWordUtils.shouldExcludeUrlByKeywords(url, excludeUrlKeywordsField.getText())) {
                     log.info("排除URL: {}", url);
                     return;
                 }
@@ -1498,21 +1474,14 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             updateCookiesCheckBox.setSelected(true);
             cookieDomainField.setEnabled(true);
 
-            int result = JOptionPane.showConfirmDialog(
-                    mainPanel,
-                    optionsPanel,
-                    "请求头更新选项",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE
-            );
+            int result = JOptionPane.showConfirmDialog(mainPanel, optionsPanel, "请求头更新选项", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 
             if (result == JOptionPane.OK_OPTION) {
                 updateRequestHeaders = updateHeadersCheckBox.isSelected();
                 updateCookies = updateCookiesCheckBox.isSelected();
                 cookieDomain = cookieDomainField.getText().trim();
 
-                log.info("导入设置 - 更新请求头Host: " + (updateRequestHeaders ? "是" : "否") +
-                        ", 更新Cookie域: " + (updateCookies ? "是，域=" + cookieDomain : "否"));
+                log.info("导入设置 - 更新请求头Host: " + (updateRequestHeaders ? "是" : "否") + ", 更新Cookie域: " + (updateCookies ? "是，域=" + cookieDomain : "否"));
             }
         }
 
@@ -1561,15 +1530,10 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
             // 处理请求头更新
             if (updateRequestHeaders || updateCookies) {
-                requestHeaders = UrlUtil.updateRequestHeaders(
-                        originalUrl, url, requestHeaders,
-                        updateRequestHeaders, updateCookies, cookieDomain
-                );
-                log.info("第" + i + 1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") +
-                        (updateCookies ? " Cookies" : ""));
+                requestHeaders = UrlUtil.updateRequestHeaders(originalUrl, url, requestHeaders, updateRequestHeaders, updateCookies, cookieDomain);
+                log.info("第" + i + 1 + "行 - 已更新请求头: " + (updateRequestHeaders ? "Host" : "") + (updateCookies ? " Cookies" : ""));
             }
-            IHttpRequestResponse messageInfo = httpServiceUtil.createFormattedHttpRequestResponse(
-                    url, statusCode, requestHeaders, requestBody, responseBody);
+            IHttpRequestResponse messageInfo = httpServiceUtil.createFormattedHttpRequestResponse(url, statusCode, requestHeaders, requestBody, responseBody);
 
             RequestResponseInfo info = new RequestResponseInfo(this.helpers, messageInfo, id);
             // 手动设置一些字段
@@ -1673,27 +1637,24 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         byte[] originalRequest = messageInfo.getRequest();
                         IRequestInfo requestInfo = helpers.analyzeRequest(originalRequest);
 
-// 复制请求体
+                        // 复制请求体
                         int bodyOffset = requestInfo.getBodyOffset();
                         byte[] requestBody = Arrays.copyOfRange(originalRequest, bodyOffset, originalRequest.length);
 
-// 构建新请求头，去掉 Cookie
-                        List<String> newHeaders = requestInfo.getHeaders().stream()
-                                .map(String::trim)
-                                .filter(header -> !header.toLowerCase().startsWith("cookie:"))
-                                .collect(Collectors.toList());
-// 可选：保留空 Cookie
+                        // 构建新请求头，去掉 Cookie
+                        List<String> newHeaders = requestInfo.getHeaders().stream().map(String::trim).filter(header -> !header.toLowerCase().startsWith("cookie:")).collect(Collectors.toList());
+                        // 可选：保留空 Cookie
                         newHeaders.add("Cookie:");
 
                         //todo 需要确定一下是否需要最后的换行  确定：需要
 
-// 构造新的请求
+                        // 构造新的请求
                         byte[] newRequest = helpers.buildHttpMessage(newHeaders, requestBody);
 
-// 发送新请求
+                        // 发送新请求
                         IHttpRequestResponse newResponse = callbacks.makeHttpRequest(messageInfo.getHttpService(), newRequest);
 
-// 提取新请求内容
+                        // 提取新请求内容
                         byte[] requestBytes = newResponse.getRequest();
                         IRequestInfo modifiedRequestInfo = helpers.analyzeRequest(requestBytes);
                         int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
@@ -1716,77 +1677,63 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         }
 
                         // 判断是否存在漏洞
-                        VulnerabilityDetectionEngine.VulnerabilityResult result =
-                                vulnEngine.detectAuthVulnerability(statusCode, responseBytes);
+                        VulnerabilityDetectionEngine.VulnerabilityResult result = vulnEngine.detectAuthVulnerability(statusCode, responseBytes);
 
                         final boolean isVulnerable = result.isVulnerable();
                         final boolean needsConfirmation = result.isNeedsConfirmation();
 
                         // 记录判断原因
-                        log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" :
-                                (needsConfirmation ? "需要确认" : "安全"), result.getReason());
+                        log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), result.getReason());
 
                         // 创建测试结果对象
-                        final AuthTestResult testResult = new AuthTestResult(
-                                authTestResults.size() + 1,
-                                info.getUrl(),
-                                statusCode,
-                                isVulnerable,
-                                needsConfirmation,
-                                requestHeadersStr,
-                                requestBodyStr, //最好采用标准的
-                                responseHeadersStr,
-                                responseBodyStr
-                        );
+                        final AuthTestResult testResult = new AuthTestResult(authTestResults.size() + 1, info.getUrl(), statusCode, isVulnerable, needsConfirmation, requestHeadersStr, requestBodyStr, //最好采用标准的
+                                responseHeadersStr, responseBodyStr);
 
                         // 创建新的记录并更新UI（在EDT线程中）
                         int finalStatusCode = statusCode;
-                        SwingUtilities.invokeLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                // 检查是否已存在相同URL的测试结果
-                                boolean isDuplicate = false;
-                                for (AuthTestResult existingResult : authTestResults) {
-                                    if (existingResult.getUrl().equals(testResult.getUrl())) {
-                                        isDuplicate = true;
-                                        // 更新现有结果
-                                        existingResult.setStatusCode(testResult.getStatusCode());
-                                        existingResult.setVulnerable(testResult.isVulnerable());
-                                        existingResult.setNeedsConfirmation(testResult.isNeedsConfirmation());
-                                        existingResult.setRequestHeaders(testResult.getRequestHeaders());
-                                        existingResult.setRequestBody(testResult.getRequestBody());
-                                        existingResult.setResponseHeaders(testResult.getResponseHeaders());
-                                        existingResult.setResponseBody(testResult.getResponseBody());
-                                        log.info("更新已存在的测试结果 - URL: {}", existingResult.getUrl());
-                                        break;
-                                    }
+                        SwingUtilities.invokeLater(() -> {
+                            // 检查是否已存在相同URL的测试结果
+                            boolean isDuplicate = false;
+                            for (AuthTestResult existingResult : authTestResults) {
+                                if (existingResult.getUrl().equals(testResult.getUrl())) {
+                                    isDuplicate = true;
+                                    // 更新现有结果
+                                    existingResult.setStatusCode(testResult.getStatusCode());
+                                    existingResult.setVulnerable(testResult.isVulnerable());
+                                    existingResult.setNeedsConfirmation(testResult.isNeedsConfirmation());
+                                    existingResult.setRequestHeaders(testResult.getRequestHeaders());
+                                    existingResult.setRequestBody(testResult.getRequestBody());
+                                    existingResult.setResponseHeaders(testResult.getResponseHeaders());
+                                    existingResult.setResponseBody(testResult.getResponseBody());
+                                    log.info("更新已存在的测试结果 - URL: {}", existingResult.getUrl());
+                                    break;
                                 }
-
-                                // 如果不是重复的，则添加到测试结果列表
-                                if (!isDuplicate) {
-                                    authTestResults.add(testResult);
-                                    log.info("添加新的测试结果 - URL: " + testResult.getUrl());
-                                }
-
-                                // 重新排序ID，确保序号连续
-                                for (int i = 0; i < authTestResults.size(); i++) {
-                                    authTestResults.get(i).setId(i + 1);
-                                }
-
-                                // 更新表格
-                                authTestTableModel.fireTableDataChanged();
-
-                                // 记录结果
-                                String resultMsg;
-                                if (isVulnerable) {
-                                    resultMsg = "可能存在未授权访问漏洞";
-                                } else if (needsConfirmation) {
-                                    resultMsg = "需要人工确认（状态码: " + finalStatusCode + "）";
-                                } else {
-                                    resultMsg = "未授权访问测试失败";
-                                }
-                                log.info("未授权访问测试结果 - URL: " + info.getUrl() + ", 状态码: " + finalStatusCode + ", 结果: " + resultMsg);
                             }
+
+                            // 如果不是重复的，则添加到测试结果列表
+                            if (!isDuplicate) {
+                                authTestResults.add(testResult);
+                                log.info("添加新的测试结果 - URL: " + testResult.getUrl());
+                            }
+
+                            // 重新排序ID，确保序号连续
+                            for (int i1 = 0; i1 < authTestResults.size(); i1++) {
+                                authTestResults.get(i1).setId(i1 + 1);
+                            }
+
+                            // 更新表格
+                            authTestTableModel.fireTableDataChanged();
+
+                            // 记录结果
+                            String resultMsg;
+                            if (isVulnerable) {
+                                resultMsg = "可能存在未授权访问漏洞";
+                            } else if (needsConfirmation) {
+                                resultMsg = "需要人工确认（状态码: " + finalStatusCode + "）";
+                            } else {
+                                resultMsg = "未授权访问测试失败";
+                            }
+                            log.info("未授权访问测试结果 - URL: " + info.getUrl() + ", 状态码: " + finalStatusCode + ", 结果: " + resultMsg);
                         });
 
                     } catch (Exception e) {
@@ -1820,173 +1767,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             }
         }, "UnauthorizedAccessTester").start();
     }
-
-
-    /**
-     * 应用排除过滤条件到已捕获的数据
-     */
-    private void applyExcludeFilter() {
-        synchronized (capturedData) {
-            List<RequestResponseInfo> filteredData = new ArrayList<>();
-            int originalSize = capturedData.size();
-
-            // 遍历所有捕获的数据
-            for (RequestResponseInfo info : capturedData) {
-                String url = info.getUrl();
-                // 检查是否应该排除（同时检查扩展名和URL关键词）
-                if (!KeyWordUtils.shouldExcludeUrl(url, excludeExtensionsField.getText()) &&
-                        !KeyWordUtils.shouldExcludeUrlByKeywords(url, excludeUrlKeywordsField.getText())) {
-                    filteredData.add(info);
-                } else {
-                    log.info("通过过滤器排除URL: " + url);
-                }
-            }
-
-            // 更新数据
-            capturedData.clear();
-            capturedData.addAll(filteredData);
-            tableModel.fireTableDataChanged();
-
-            int removedCount = originalSize - capturedData.size();
-            log.info("应用排除过滤，移除了 " + removedCount + " 条记录，剩余 " + capturedData.size() + " 条记录");
-            JOptionPane.showMessageDialog(mainPanel, "过滤完成，移除了 " + removedCount + " 条记录", "信息", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
-    /**
-     * 确认选中的未授权测试结果
-     */
-    private void confirmAuthTestResult() {
-        int row = authTestResultsTable.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(mainPanel, "请选择要确认的测试结果", "提示", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        int modelRow = authTestResultsTable.convertRowIndexToModel(row);
-        AuthTestResult result = authTestResults.get(modelRow);
-
-        // 如果是需要确认的结果（黄色），则让用户选择是漏洞还是安全
-        if (result.isNeedsConfirmation()) {
-            Object[] options = {"确认为漏洞", "确认为安全", "取消"};
-            int choice = JOptionPane.showOptionDialog(mainPanel,
-                    "请确认该测试结果的状态：\nURL: " + result.getUrl() + "\n状态码: " + result.getStatusCode(),
-                    "确认测试结果",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[2]);
-
-            if (choice == 0) { // 确认为漏洞
-                result.setVulnerable(true);
-                result.setNeedsConfirmation(false);
-                log.info("已确认 URL: " + result.getUrl() + " 存在未授权访问漏洞");
-            } else if (choice == 1) { // 确认为安全
-                result.setVulnerable(false);
-                result.setNeedsConfirmation(false);
-                log.info("已确认 URL: " + result.getUrl() + " 不存在未授权访问漏洞");
-            } else {
-                // 取消操作
-                return;
-            }
-
-            // 更新表格
-            authTestTableModel.fireTableDataChanged();
-        } else {
-            JOptionPane.showMessageDialog(mainPanel, "选中的结果不需要确认", "提示", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
-    /**
-     * 导出未授权访问测试结果到CSV文件
-     */
-    private void exportAuthTestResults() {
-        if (authTestResults.isEmpty()) {
-            JOptionPane.showMessageDialog(mainPanel, "没有测试结果可导出！", "错误", JOptionPane.ERROR_MESSAGE);
-            log.warn("导出失败：没有测试结果");
-            return;
-        }
-
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
-        fileChooser.setSelectedFile(new File("unauthorized_test_results.csv"));
-
-        int result = fileChooser.showSaveDialog(mainPanel);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            String filePath = selectedFile.getAbsolutePath();
-
-            // 确保文件扩展名正确
-            if (!filePath.toLowerCase().endsWith(".csv")) {
-                filePath += ".csv";
-            }
-
-            try {
-                ExportResult.exportAuthTestResultsToCSV(filePath, authTestResults);
-                JOptionPane.showMessageDialog(mainPanel, "导出成功！", "信息", JOptionPane.INFORMATION_MESSAGE);
-                log.info("成功导出 " + authTestResults.size() + " 条未授权测试结果到文件: " + filePath);
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(mainPanel, "导出失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                log.error("导出失败: " + e.getMessage());
-            }
-        } else {
-            log.info("用户取消了文件选择");
-        }
-    }
-
-
-    /**
-     * 批量确认选中的未授权测试结果
-     */
-    private void batchConfirmAuthTestResults() {
-        List<AuthTestResult> selectedResults = new ArrayList<>();
-
-        // 收集所有选中的需要确认的结果
-        for (AuthTestResult result : authTestResults) {
-            if (result.isSelected() && result.isNeedsConfirmation()) {
-                selectedResults.add(result);
-            }
-        }
-
-        if (selectedResults.isEmpty()) {
-            JOptionPane.showMessageDialog(mainPanel, "没有选中需要确认的测试结果", "提示", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        // 弹出确认对话框
-        Object[] options = {"确认为漏洞", "确认为安全", "取消"};
-        int choice = JOptionPane.showOptionDialog(mainPanel,
-                "请确认 " + selectedResults.size() + " 个选中的测试结果状态",
-                "批量确认测试结果",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[2]);
-
-        if (choice == 0) { // 确认为漏洞
-            for (AuthTestResult result : selectedResults) {
-                result.setVulnerable(true);
-                result.setNeedsConfirmation(false);
-            }
-            log.info("已批量确认 " + selectedResults.size() + " 个URL存在未授权访问漏洞");
-        } else if (choice == 1) { // 确认为安全
-            for (AuthTestResult result : selectedResults) {
-                result.setVulnerable(false);
-                result.setNeedsConfirmation(false);
-            }
-            log.info("已批量确认 " + selectedResults.size() + " 个URL不存在未授权访问漏洞");
-        } else {
-            // 取消操作
-            return;
-        }
-
-        // 更新表格
-        authTestTableModel.fireTableDataChanged();
-    }
-
-
     /**
      * 测试CSRF漏洞，修改Referer后重新发送请求
      */
@@ -2019,16 +1799,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
         // 弹出对话框，让用户选择如何修改Referer
         String[] options = {"移除Referer", "使用自定义Referer", "使用随机域名Referer"};
-        int choice = JOptionPane.showOptionDialog(
-                mainPanel,
-                "请选择如何修改Referer头：",
-                "CSRF测试",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]
-        );
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请选择如何修改Referer头：", "CSRF测试", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
         if (choice == JOptionPane.CLOSED_OPTION) {
             // 用户关闭了对话框，取消测试
@@ -2042,11 +1813,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 如果选择使用自定义Referer，则弹出输入框
         final String customReferer;
         if (choice == 1) {
-            customReferer = JOptionPane.showInputDialog(
-                    mainPanel,
-                    "请输入自定义Referer值：",
-                    "https://attacker-site.com"
-            );
+            customReferer = JOptionPane.showInputDialog(mainPanel, "请输入自定义Referer值：", "https://attacker-site.com");
             if (customReferer == null || customReferer.trim().isEmpty()) {
                 // 用户取消了输入，取消测试
                 SwingUtilities.invokeLater(() -> {
@@ -2125,7 +1892,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             modifiedReferer = refererValue;
                         }
 
-                        log.info("修改Referer，准备重新发送请求: " + info.getUrl());
+                        log.info("修改Referer，准备重新发送请求: {}", info.getUrl());
 
                         // 重建请求（保持请求体不变）
                         byte[] body = new byte[originalRequest.length - requestInfo.getBodyOffset()];
@@ -2165,28 +1932,15 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         }
 
                         // 判断是否存在漏洞
-                        VulnerabilityDetectionEngine.VulnerabilityResult result =
-                                vulnEngine.detectCsrfVulnerability(statusCode, responseBytes2, info.getMethod());
+                        VulnerabilityDetectionEngine.VulnerabilityResult result = vulnEngine.detectCsrfVulnerability(statusCode, responseBytes2, info.getMethod());
 
                         final boolean isVulnerable = result.isVulnerable();
                         final boolean needsConfirmation = result.isNeedsConfirmation();
 
                         // 记录判断原因
-                        log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" :
-                                (needsConfirmation ? "需要确认" : "安全"), result.getReason());
+                        log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), result.getReason());
                         // 创建测试结果对象
-                        final CsrfTestResult testResult = new CsrfTestResult(
-                                csrfTestResults.size() + 1,
-                                info.getUrl(),
-                                statusCode,
-                                isVulnerable,
-                                needsConfirmation,
-                                UrlUtil.formatHttpHeaders(requestHeadersStr),
-                                info.getRequestBody(),
-                                responseHeadersStr,
-                                responseBodyStr,
-                                modifiedReferer
-                        );
+                        final CsrfTestResult testResult = new CsrfTestResult(csrfTestResults.size() + 1, info.getUrl(), statusCode, isVulnerable, needsConfirmation, requestHeadersStr, requestBodyStr, responseHeadersStr, responseBodyStr, modifiedReferer);
 
                         // 创建新的记录并更新UI（在EDT线程中）
                         SwingUtilities.invokeLater(new Runnable() {
@@ -2262,160 +2016,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }, "CsrfVulnerabilityTester").start();
     }
 
-    /**
-     * 清空CSRF测试结果
-     */
-    private void clearCsrfTestResults() {
-        csrfTestResults.clear();
-        csrfTestTableModel.fireTableDataChanged();
-        csrfRequestViewer.setText("");
-        csrfResponseViewer.setText("");
-        log.info("已清空CSRF测试结果");
-    }
-
-    /**
-     * 确认CSRF测试结果
-     */
-    private void confirmCsrfTestResult() {
-        int selectedRow = csrfTestResultsTable.getSelectedRow();
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(mainPanel, "请先选择一条测试结果！", "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int modelRow = csrfTestResultsTable.convertRowIndexToModel(selectedRow);
-        CsrfTestResult result = csrfTestResults.get(modelRow);
-
-        // 如果不需要确认，则直接返回
-        if (!result.isNeedsConfirmation()) {
-            JOptionPane.showMessageDialog(mainPanel, "该测试结果不需要确认！", "信息", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        // 弹出确认对话框
-        String[] options = {"确认存在CSRF漏洞", "确认不存在CSRF漏洞", "取消"};
-        int choice = JOptionPane.showOptionDialog(mainPanel,
-                "请确认URL: " + result.getUrl() + " 的CSRF测试结果：",
-                "确认CSRF测试结果",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]);
-
-        if (choice == 0) { // 确认为漏洞
-            result.setVulnerable(true);
-            result.setNeedsConfirmation(false);
-            log.info("已确认 URL: " + result.getUrl() + " 存在CSRF漏洞");
-        } else if (choice == 1) { // 确认为安全
-            result.setVulnerable(false);
-            result.setNeedsConfirmation(false);
-            log.info("已确认 URL: " + result.getUrl() + " 不存在CSRF漏洞");
-        } else {
-            // 取消操作
-            return;
-        }
-
-        // 更新表格
-        csrfTestTableModel.fireTableDataChanged();
-    }
-
-    /**
-     * 批量确认CSRF测试结果
-     */
-    private void batchConfirmCsrfTestResults() {
-        // 获取选中的测试结果
-        List<CsrfTestResult> selectedResults = new ArrayList<>();
-        for (CsrfTestResult result : csrfTestResults) {
-            if (result.isSelected() && result.isNeedsConfirmation()) {
-                selectedResults.add(result);
-            }
-        }
-
-        if (selectedResults.isEmpty()) {
-            JOptionPane.showMessageDialog(mainPanel, "没有选择需要确认的测试结果！", "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // 弹出确认对话框
-        String[] options = {"确认存在CSRF漏洞", "确认不存在CSRF漏洞", "取消"};
-        int choice = JOptionPane.showOptionDialog(mainPanel,
-                "请确认 " + selectedResults.size() + " 个选中的测试结果：",
-                "批量确认CSRF测试结果",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]);
-
-        if (choice == 0) { // 确认为漏洞
-            for (CsrfTestResult result : selectedResults) {
-                result.setVulnerable(true);
-                result.setNeedsConfirmation(false);
-            }
-            log.info("已批量确认 " + selectedResults.size() + " 个URL存在CSRF漏洞");
-        } else if (choice == 1) { // 确认为安全
-            for (CsrfTestResult result : selectedResults) {
-                result.setVulnerable(false);
-                result.setNeedsConfirmation(false);
-            }
-            log.info("已批量确认 " + selectedResults.size() + " 个URL不存在CSRF漏洞");
-        } else {
-            // 取消操作
-            return;
-        }
-
-        // 更新表格
-        csrfTestTableModel.fireTableDataChanged();
-    }
-
-    /**
-     * 导出CSRF测试结果
-     */
-    private void exportCsrfTestResults() {
-        if (csrfTestResults.isEmpty()) {
-            JOptionPane.showMessageDialog(mainPanel, "没有测试结果可导出！", "错误", JOptionPane.ERROR_MESSAGE);
-            log.warn("导出失败：没有CSRF测试结果");
-            return;
-        }
-
-        // 创建文件选择器
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("保存CSRF测试结果");
-        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV文件", "csv"));
-        fileChooser.setSelectedFile(new File("csrf_test_results.csv"));
-
-        int result = fileChooser.showSaveDialog(mainPanel);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            try {
-                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
-                if (!filePath.toLowerCase().endsWith(".csv")) {
-                    filePath += ".csv";
-                }
-
-                ExportResult.exportCsrfTestResultsToCSV(filePath, csrfTestResults);
-                JOptionPane.showMessageDialog(mainPanel, "导出成功！", "信息", JOptionPane.INFORMATION_MESSAGE);
-                log.info("成功导出 " + csrfTestResults.size() + " 条CSRF测试结果到文件: " + filePath);
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(mainPanel, "导出失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                log.error("导出失败: " + e.getMessage());
-            }
-        } else {
-            log.info("用户取消了文件选择");
-        }
-    }
-
-
-    /**
-     * 清空不安全HTTP方法测试结果
-     */
-    private void clearUnsafeMethodTestResults() {
-        unsafeMethodTestResults.clear();
-        unsafeMethodTestTableModel.fireTableDataChanged();
-        unsafeMethodRequestViewer.setText("");
-        unsafeMethodResponseViewer.setText("");
-        log.info("已清空不安全HTTP方法测试结果");
-    }
 
     /**
      * 测试不安全HTTP方法漏洞
@@ -2457,8 +2057,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         JScrollPane scrollPane = new JScrollPane(methodList);
         scrollPane.setPreferredSize(new Dimension(250, 150));
 
-        int result = JOptionPane.showConfirmDialog(mainPanel, scrollPane,
-                "选择要测试的HTTP方法", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(mainPanel, scrollPane, "选择要测试的HTTP方法", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result != JOptionPane.OK_OPTION) {
             // 用户取消了操作，隐藏进度条
@@ -2548,8 +2147,10 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
 
                                 // 解析请求头和请求体
+                                String requestBodyStr="";
                                 String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
                                 if (requestBytes.length > modifiedBodyOffset) {
+                                    requestBodyStr=new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
                                 }
 
                                 // 解析响应头和响应体
@@ -2561,15 +2162,13 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     responseBodyStr = new String(responseBytes2, responseBodyOffset, responseBytes2.length - responseBodyOffset);
                                 }
                                 // 判断是否存在漏洞
-                                VulnerabilityDetectionEngine.VulnerabilityResult result =
-                                        vulnEngine.detectUnsafeMethodVulnerability(statusCode, responseBytes2, method, info.getUrl());
+                                VulnerabilityDetectionEngine.VulnerabilityResult result = vulnEngine.detectUnsafeMethodVulnerability(statusCode, responseBytes2, method, info.getUrl());
 
                                 final boolean isVulnerable = result.isVulnerable();
                                 final boolean needsConfirmation = result.isNeedsConfirmation();
 
                                 // 记录判断原因
-                                log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" :
-                                        (needsConfirmation ? "需要确认" : "安全"), result.getReason());
+                                log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), result.getReason());
 
                                 // 创建测试结果对象
                                 final UnsafeMethodTestResult testResult = new UnsafeMethodTestResult(
@@ -2580,8 +2179,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         statusCode,
                                         isVulnerable,
                                         needsConfirmation,
-                                        UrlUtil.formatHttpHeaders(requestHeadersStr),
-                                        info.getRequestBody(),
+                                        requestHeadersStr,
+                                        requestBodyStr,
                                         responseHeadersStr,
                                         responseBodyStr
                                 );
@@ -2594,8 +2193,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         boolean isDuplicate = false;
                                         for (int i = 0; i < unsafeMethodTestResults.size(); i++) {
                                             UnsafeMethodTestResult existingResult = unsafeMethodTestResults.get(i);
-                                            if (existingResult.getUrl().equals(testResult.getUrl()) &&
-                                                    existingResult.getModifiedMethod().equals(testResult.getModifiedMethod())) {
+                                            if (existingResult.getUrl().equals(testResult.getUrl()) && existingResult.getModifiedMethod().equals(testResult.getModifiedMethod())) {
                                                 unsafeMethodTestResults.set(i, testResult);
                                                 isDuplicate = true;
                                                 log.info("更新已存在的不安全HTTP方法测试结果 - URL: " + existingResult.getUrl() + ", 方法: " + existingResult.getModifiedMethod());
@@ -2663,6 +2261,509 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         }, "UnsafeHttpMethodTester").start();
     }
 
+
+    /**
+     * 执行越权测试
+     *
+     * @param selectedRequests 选中的请求列表
+     * @param sessions         测试会话列表
+     * @param testType         测试类型（"horizontal" 或 "vertical"）
+     * @param manualParams     手动指定的参数列表
+     * @param autoDetectParams 是否自动检测参数
+     */
+    private void performPrivilegeEscalationTest(List<RequestResponseInfo> selectedRequests, List<TestSession> sessions, String testType, String manualParams, boolean autoDetectParams, boolean enableUrlFilter) {
+        if (selectedRequests.isEmpty() || sessions.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel, "请选择至少一个请求和配置至少一个会话", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // 检查会话
+        List<TestSession> sortedSessions = new ArrayList<>(sessions);
+        if ("vertical".equals(testType)) {
+            // 垂直越权：按权限级别排序会话
+            sortedSessions.sort(Comparator.comparingInt(TestSession::getPrivilegeLevel));
+        }
+
+        // 设置进度条
+        SwingUtilities.invokeLater(() -> {
+            progressBar.setValue(0);
+            progressBar.setVisible(true);
+            statusLabel.setText("正在执行越权测试...");
+        });
+
+        // 在单独的线程中执行测试
+        new Thread(() -> {
+            try {
+                final int totalTests = selectedRequests.size() * (sessions.size() - 1);
+                final AtomicInteger testCount = new AtomicInteger(0);
+
+                // 清空现有结果
+                privilegeEscalationResults.clear();
+
+                // 对每个请求进行测试
+                for (RequestResponseInfo info : selectedRequests) {
+                    // 获取原始请求和响应
+                    byte[] originalRequest = info.getMessageInfo().getRequest();
+                    //原始响应
+                    byte[] originalResponse = info.getMessageInfo().getResponse();
+
+                    // 如果启用URL参数过滤，对URL进行处理，移除参数部分
+                    String originalUrl = info.getUrl();
+                    String filteredUrl = UrlUtil.filterUrl(originalUrl, enableUrlFilter, urlFilterCache);
+
+                    // 在越权测试中，我们主要关注会话替换而非参数修改
+                    // 不再需要检查用户标识参数
+
+                    // 水平越权：使用不同用户的相同权限会话进行测试
+                    // 垂直越权：使用不同权限级别的会话进行测试
+                    for (int i = 0; i < sortedSessions.size(); i++) {
+                        TestSession originalSession = sortedSessions.get(i);
+
+                        // 使用原始会话的Cookie/Authorization替换请求中的Cookie/Authorization
+                        // 修复: 确保使用原始会话的Cookie替换请求中的Cookie
+                        byte[] sessionReplacedRequest = httpServiceUtil.replaceSessionInRequest(originalRequest, getSessionString(originalSession));
+
+                        // 发送原始会话请求并获取响应
+                        IHttpRequestResponse originalSessionResponse = callbacks.makeHttpRequest(info.getMessageInfo().getHttpService(), sessionReplacedRequest);
+
+                        // 提取原始请求和响应的详细信息
+                        IRequestInfo originalRequestInfo = helpers.analyzeRequest(originalSessionResponse);
+                        byte[] originalSessionResponseBytes = originalSessionResponse.getResponse();
+                        IResponseInfo originalResponseInfo = helpers.analyzeResponse(originalSessionResponseBytes);
+                        int originalStatusCode = originalResponseInfo.getStatusCode();
+
+                        // 解析请求头和请求体
+                        int originalBodyOffset = originalRequestInfo.getBodyOffset();
+                        String originalRequestHeaders = new String(sessionReplacedRequest, 0, originalBodyOffset);
+                        String originalRequestBody = new String(sessionReplacedRequest, originalBodyOffset, sessionReplacedRequest.length - originalBodyOffset);
+
+                        // 解析响应头和响应体
+                        int originalResponseBodyOffset = originalResponseInfo.getBodyOffset();
+                        String originalResponseHeaders = new String(originalSessionResponseBytes, 0, originalResponseBodyOffset);
+                        String originalResponseBody = new String(originalSessionResponseBytes, originalResponseBodyOffset, originalSessionResponseBytes.length - originalResponseBodyOffset);
+
+                        // 对每个其他会话进行测试
+                        for (int j = 0; j < sortedSessions.size(); j++) {
+                            if (i == j) continue; // 跳过相同的会话
+
+                            TestSession testSession = sortedSessions.get(j);
+
+                            // 垂直越权时，检查权限级别
+                            if ("vertical".equals(testType)) {
+                                // 对于垂直越权，只测试从低权限到高权限的请求
+                                if (testSession.getPrivilegeLevel() >= originalSession.getPrivilegeLevel()) {
+                                    continue;
+                                }
+                            }
+
+                            // 更新进度
+                            final int currentTestCount = testCount.incrementAndGet();
+                            SwingUtilities.invokeLater(() -> {
+                                int progress = (int) ((currentTestCount * 100.0) / totalTests);
+                                progressBar.setValue(progress);
+                                statusLabel.setText("正在执行越权测试... (" + currentTestCount + "/" + totalTests + ")");
+                            });
+
+                            // 仅使用测试会话替换Cookie/Authorization
+                            byte[] testSessionRequest = httpServiceUtil.replaceSessionInRequest(originalRequest, getSessionString(testSession));
+
+                            // 发送测试请求并获取响应
+                            IHttpRequestResponse testResponse = callbacks.makeHttpRequest(info.getMessageInfo().getHttpService(), testSessionRequest);
+
+                            // 提取测试请求和响应的详细信息
+                            IRequestInfo testRequestInfo = helpers.analyzeRequest(testResponse);
+                            byte[] testResponseBytes = testResponse.getResponse();
+                            IResponseInfo testResponseInfo = helpers.analyzeResponse(testResponseBytes);
+                            int testStatusCode = testResponseInfo.getStatusCode();
+
+                            // 解析请求头和请求体
+                            int testBodyOffset = testRequestInfo.getBodyOffset();
+                            String testRequestHeaders = new String(testSessionRequest, 0, testBodyOffset);
+                            String testRequestBody = new String(testSessionRequest, testBodyOffset, testSessionRequest.length - testBodyOffset);
+
+                            // 解析响应头和响应体
+                            int testResponseBodyOffset = testResponseInfo.getBodyOffset();
+                            String testResponseHeaders = new String(testResponseBytes, 0, testResponseBodyOffset);
+                            String testResponseBody = new String(testResponseBytes, testResponseBodyOffset, testResponseBytes.length - testResponseBodyOffset);
+
+
+                            // 计算响应相似度
+                            int similarity = vulnEngine.evaluateBySimilarity(originalSessionResponseBytes, testResponseBytes);
+                            // 综合判断是否存在漏洞
+                            VulnerabilityDetectionEngine.VulnerabilityResult results = vulnEngine.detectPrivilegeEscalationVulnerability(testStatusCode, testResponseBytes, originalResponse, similarity);
+
+                            final boolean isVulnerable = results.isVulnerable();
+                            final boolean needsConfirmation = results.isNeedsConfirmation();
+
+                            // 记录判断原因
+                            log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), results.getReason());
+
+
+                            // 创建测试结果，使用会话名称作为参数标识
+                            final PrivilegeEscalationResult result = new PrivilegeEscalationResult(
+                                    privilegeEscalationResults.size() + 1,
+                                    enableUrlFilter ? filteredUrl : originalUrl, testType.equals("horizontal") ? "水平越权" : "垂直越权", "会话替换", // 使用会话替换作为参数名
+                                    originalSession.getName(), // 原始会话名称
+                                    testSession.getName(), // 测试会话名称
+                                    originalStatusCode,
+                                    testStatusCode,
+                                    isVulnerable,
+                                    needsConfirmation,
+                                    originalRequestHeaders,
+                                    originalRequestBody,
+                                    originalResponseHeaders,
+                                    originalResponseBody,
+                                    testRequestHeaders,
+                                    testRequestBody,
+                                    testResponseHeaders,
+                                    testResponseBody,
+                                    originalSession,
+                                    testSession);
+
+                            // 添加结果到列表
+                            SwingUtilities.invokeLater(() -> {
+                                privilegeEscalationResults.add(result);
+                                privilegeEscalationTableModel.fireTableDataChanged();
+
+                                // 记录结果
+                                String resultMsg;
+                                if (result.isVulnerable()) {
+                                    resultMsg = "可能存在越权漏洞";
+                                } else if (result.isNeedsConfirmation()) {
+                                    resultMsg = "需要人工确认（状态码: " + testStatusCode + "）";
+                                } else {
+                                    resultMsg = "未发现越权漏洞";
+                                }
+
+                                log.info("越权测试结果 - URL: " + info.getUrl() + ", 会话替换: " + originalSession.getName() + " -> " + testSession.getName() + ", 状态码: " + testStatusCode + ", 结果: " + resultMsg);
+                            });
+                        }
+                    }
+                }
+
+                // 测试完成后，更新UI
+                final int finalTestCount = testCount.get();
+                SwingUtilities.invokeLater(() -> {
+                    progressBar.setValue(100);
+                    statusLabel.setText("越权测试完成，共测试 " + finalTestCount + " 个请求");
+
+                    // 3秒后隐藏进度条
+                    new Timer(3000, e -> {
+                        progressBar.setVisible(false);
+                        statusLabel.setText("就绪");
+                        ((Timer) e.getSource()).stop();
+                    }).start();
+
+                    JOptionPane.showMessageDialog(mainPanel, "越权测试完成，结果已添加到列表中。\n共测试 " + finalTestCount + " 个请求组合。", "信息", JOptionPane.INFORMATION_MESSAGE);
+                });
+            } catch (Exception e) {
+                log.error("执行越权测试过程中出错: " + e.getMessage());
+                e.printStackTrace();
+
+                // 出错时也要隐藏进度条
+                SwingUtilities.invokeLater(() -> {
+                    progressBar.setVisible(false);
+                    statusLabel.setText("测试越权时出错: " + e.getMessage());
+                });
+            }
+        }, "PrivilegeEscalationTester").start();
+    }
+
+
+    /**
+     * 应用排除过滤条件到已捕获的数据
+     */
+    private void applyExcludeFilter() {
+        synchronized (capturedData) {
+            List<RequestResponseInfo> filteredData = new ArrayList<>();
+            int originalSize = capturedData.size();
+
+            // 遍历所有捕获的数据
+            for (RequestResponseInfo info : capturedData) {
+                String url = info.getUrl();
+                // 检查是否应该排除（同时检查扩展名和URL关键词）
+                if (!KeyWordUtils.shouldExcludeUrl(url, excludeExtensionsField.getText()) && !KeyWordUtils.shouldExcludeUrlByKeywords(url, excludeUrlKeywordsField.getText())) {
+                    filteredData.add(info);
+                } else {
+                    log.info("通过过滤器排除URL: " + url);
+                }
+            }
+
+            // 更新数据
+            capturedData.clear();
+            capturedData.addAll(filteredData);
+            tableModel.fireTableDataChanged();
+
+            int removedCount = originalSize - capturedData.size();
+            log.info("应用排除过滤，移除了 " + removedCount + " 条记录，剩余 " + capturedData.size() + " 条记录");
+            JOptionPane.showMessageDialog(mainPanel, "过滤完成，移除了 " + removedCount + " 条记录", "信息", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    /**
+     * 确认选中的未授权测试结果
+     */
+    private void confirmAuthTestResult() {
+        int row = authTestResultsTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(mainPanel, "请选择要确认的测试结果", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int modelRow = authTestResultsTable.convertRowIndexToModel(row);
+        AuthTestResult result = authTestResults.get(modelRow);
+
+        // 如果是需要确认的结果（黄色），则让用户选择是漏洞还是安全
+        if (result.isNeedsConfirmation()) {
+            Object[] options = {"确认为漏洞", "确认为安全", "取消"};
+            int choice = JOptionPane.showOptionDialog(mainPanel, "请确认该测试结果的状态：\nURL: " + result.getUrl() + "\n状态码: " + result.getStatusCode(), "确认测试结果", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
+
+            if (choice == 0) { // 确认为漏洞
+                result.setVulnerable(true);
+                result.setNeedsConfirmation(false);
+                log.info("已确认 URL: " + result.getUrl() + " 存在未授权访问漏洞");
+            } else if (choice == 1) { // 确认为安全
+                result.setVulnerable(false);
+                result.setNeedsConfirmation(false);
+                log.info("已确认 URL: " + result.getUrl() + " 不存在未授权访问漏洞");
+            } else {
+                // 取消操作
+                return;
+            }
+
+            // 更新表格
+            authTestTableModel.fireTableDataChanged();
+        } else {
+            JOptionPane.showMessageDialog(mainPanel, "选中的结果不需要确认", "提示", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    /**
+     * 导出未授权访问测试结果到CSV文件
+     */
+    private void exportAuthTestResults() {
+        if (authTestResults.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel, "没有测试结果可导出！", "错误", JOptionPane.ERROR_MESSAGE);
+            log.warn("导出失败：没有测试结果");
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
+        fileChooser.setSelectedFile(new File("unauthorized_test_results.csv"));
+
+        int result = fileChooser.showSaveDialog(mainPanel);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            String filePath = selectedFile.getAbsolutePath();
+
+            // 确保文件扩展名正确
+            if (!filePath.toLowerCase().endsWith(".csv")) {
+                filePath += ".csv";
+            }
+
+            try {
+                ExportResult.exportAuthTestResultsToCSV(filePath, authTestResults);
+                JOptionPane.showMessageDialog(mainPanel, "导出成功！", "信息", JOptionPane.INFORMATION_MESSAGE);
+                log.info("成功导出 " + authTestResults.size() + " 条未授权测试结果到文件: " + filePath);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(mainPanel, "导出失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log.error("导出失败: " + e.getMessage());
+            }
+        } else {
+            log.info("用户取消了文件选择");
+        }
+    }
+
+
+    /**
+     * 批量确认选中的未授权测试结果
+     */
+    private void batchConfirmAuthTestResults() {
+        List<AuthTestResult> selectedResults = new ArrayList<>();
+
+        // 收集所有选中的需要确认的结果
+        for (AuthTestResult result : authTestResults) {
+            if (result.isSelected() && result.isNeedsConfirmation()) {
+                selectedResults.add(result);
+            }
+        }
+
+        if (selectedResults.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel, "没有选中需要确认的测试结果", "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 弹出确认对话框
+        Object[] options = {"确认为漏洞", "确认为安全", "取消"};
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请确认 " + selectedResults.size() + " 个选中的测试结果状态", "批量确认测试结果", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
+
+        if (choice == 0) { // 确认为漏洞
+            for (AuthTestResult result : selectedResults) {
+                result.setVulnerable(true);
+                result.setNeedsConfirmation(false);
+            }
+            log.info("已批量确认 " + selectedResults.size() + " 个URL存在未授权访问漏洞");
+        } else if (choice == 1) { // 确认为安全
+            for (AuthTestResult result : selectedResults) {
+                result.setVulnerable(false);
+                result.setNeedsConfirmation(false);
+            }
+            log.info("已批量确认 " + selectedResults.size() + " 个URL不存在未授权访问漏洞");
+        } else {
+            // 取消操作
+            return;
+        }
+
+        // 更新表格
+        authTestTableModel.fireTableDataChanged();
+    }
+
+
+
+
+    /**
+     * 清空CSRF测试结果
+     */
+    private void clearCsrfTestResults() {
+        csrfTestResults.clear();
+        csrfTestTableModel.fireTableDataChanged();
+        csrfRequestViewer.setText("");
+        csrfResponseViewer.setText("");
+        log.info("已清空CSRF测试结果");
+    }
+
+    /**
+     * 确认CSRF测试结果
+     */
+    private void confirmCsrfTestResult() {
+        int selectedRow = csrfTestResultsTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(mainPanel, "请先选择一条测试结果！", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int modelRow = csrfTestResultsTable.convertRowIndexToModel(selectedRow);
+        CsrfTestResult result = csrfTestResults.get(modelRow);
+
+        // 如果不需要确认，则直接返回
+        if (!result.isNeedsConfirmation()) {
+            JOptionPane.showMessageDialog(mainPanel, "该测试结果不需要确认！", "信息", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 弹出确认对话框
+        String[] options = {"确认存在CSRF漏洞", "确认不存在CSRF漏洞", "取消"};
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请确认URL: " + result.getUrl() + " 的CSRF测试结果：", "确认CSRF测试结果", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+        if (choice == 0) { // 确认为漏洞
+            result.setVulnerable(true);
+            result.setNeedsConfirmation(false);
+            log.info("已确认 URL: " + result.getUrl() + " 存在CSRF漏洞");
+        } else if (choice == 1) { // 确认为安全
+            result.setVulnerable(false);
+            result.setNeedsConfirmation(false);
+            log.info("已确认 URL: " + result.getUrl() + " 不存在CSRF漏洞");
+        } else {
+            // 取消操作
+            return;
+        }
+
+        // 更新表格
+        csrfTestTableModel.fireTableDataChanged();
+    }
+
+    /**
+     * 批量确认CSRF测试结果
+     */
+    private void batchConfirmCsrfTestResults() {
+        // 获取选中的测试结果
+        List<CsrfTestResult> selectedResults = new ArrayList<>();
+        for (CsrfTestResult result : csrfTestResults) {
+            if (result.isSelected() && result.isNeedsConfirmation()) {
+                selectedResults.add(result);
+            }
+        }
+
+        if (selectedResults.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel, "没有选择需要确认的测试结果！", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // 弹出确认对话框
+        String[] options = {"确认存在CSRF漏洞", "确认不存在CSRF漏洞", "取消"};
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请确认 " + selectedResults.size() + " 个选中的测试结果：", "批量确认CSRF测试结果", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+        if (choice == 0) { // 确认为漏洞
+            for (CsrfTestResult result : selectedResults) {
+                result.setVulnerable(true);
+                result.setNeedsConfirmation(false);
+            }
+            log.info("已批量确认 " + selectedResults.size() + " 个URL存在CSRF漏洞");
+        } else if (choice == 1) { // 确认为安全
+            for (CsrfTestResult result : selectedResults) {
+                result.setVulnerable(false);
+                result.setNeedsConfirmation(false);
+            }
+            log.info("已批量确认 " + selectedResults.size() + " 个URL不存在CSRF漏洞");
+        } else {
+            // 取消操作
+            return;
+        }
+
+        // 更新表格
+        csrfTestTableModel.fireTableDataChanged();
+    }
+
+    /**
+     * 导出CSRF测试结果
+     */
+    private void exportCsrfTestResults() {
+        if (csrfTestResults.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel, "没有测试结果可导出！", "错误", JOptionPane.ERROR_MESSAGE);
+            log.warn("导出失败：没有CSRF测试结果");
+            return;
+        }
+
+        // 创建文件选择器
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("保存CSRF测试结果");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("CSV文件", "csv"));
+        fileChooser.setSelectedFile(new File("csrf_test_results.csv"));
+
+        int result = fileChooser.showSaveDialog(mainPanel);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!filePath.toLowerCase().endsWith(".csv")) {
+                    filePath += ".csv";
+                }
+
+                ExportResult.exportCsrfTestResultsToCSV(filePath, csrfTestResults);
+                JOptionPane.showMessageDialog(mainPanel, "导出成功！", "信息", JOptionPane.INFORMATION_MESSAGE);
+                log.info("成功导出 " + csrfTestResults.size() + " 条CSRF测试结果到文件: " + filePath);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(mainPanel, "导出失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log.error("导出失败: " + e.getMessage());
+            }
+        } else {
+            log.info("用户取消了文件选择");
+        }
+    }
+
+
+    /**
+     * 清空不安全HTTP方法测试结果
+     */
+    private void clearUnsafeMethodTestResults() {
+        unsafeMethodTestResults.clear();
+        unsafeMethodTestTableModel.fireTableDataChanged();
+        unsafeMethodRequestViewer.setText("");
+        unsafeMethodResponseViewer.setText("");
+        log.info("已清空不安全HTTP方法测试结果");
+    }
+
+
     /**
      * 确认不安全HTTP方法测试结果
      */
@@ -2684,14 +2785,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
         // 弹出确认对话框
         String[] options = {"确认存在不安全请求漏洞", "确认不存在不安全请求漏洞", "取消"};
-        int choice = JOptionPane.showOptionDialog(mainPanel,
-                "请确认URL: " + result.getUrl() + " 的不安全HTTP方法 " + result.getModifiedMethod() + " 测试结果：",
-                "确认不安全HTTP方法测试结果",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]);
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请确认URL: " + result.getUrl() + " 的不安全HTTP方法 " + result.getModifiedMethod() + " 测试结果：", "确认不安全HTTP方法测试结果", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
         if (choice == 0) { // 确认为漏洞
             result.setVulnerable(true);
@@ -2729,14 +2823,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
         // 弹出确认对话框
         String[] options = {"确认存在不安全请求漏洞", "确认不存在不安全请求漏洞", "取消"};
-        int choice = JOptionPane.showOptionDialog(mainPanel,
-                "请确认 " + selectedResults.size() + " 个选中的测试结果：",
-                "批量确认不安全HTTP方法测试结果",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]);
+        int choice = JOptionPane.showOptionDialog(mainPanel, "请确认 " + selectedResults.size() + " 个选中的测试结果：", "批量确认不安全HTTP方法测试结果", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
         if (choice == 0) { // 确认为漏洞
             for (UnsafeMethodTestResult result : selectedResults) {
@@ -2797,238 +2884,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     /**
      * 创建越权测试面板
      */
-    /**
-     * 执行越权测试
-     *
-     * @param selectedRequests 选中的请求列表
-     * @param sessions         测试会话列表
-     * @param testType         测试类型（"horizontal" 或 "vertical"）
-     * @param manualParams     手动指定的参数列表
-     * @param autoDetectParams 是否自动检测参数
-     */
-    private void performPrivilegeEscalationTest(List<RequestResponseInfo> selectedRequests,
-                                                List<TestSession> sessions,
-                                                String testType,
-                                                String manualParams,
-                                                boolean autoDetectParams,
-                                                boolean enableUrlFilter) {
-        if (selectedRequests.isEmpty() || sessions.isEmpty()) {
-            JOptionPane.showMessageDialog(mainPanel,
-                    "请选择至少一个请求和配置至少一个会话",
-                    "错误", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // 检查会话
-        List<TestSession> sortedSessions = new ArrayList<>(sessions);
-        if ("vertical".equals(testType)) {
-            // 垂直越权：按权限级别排序会话
-            sortedSessions.sort(Comparator.comparingInt(TestSession::getPrivilegeLevel));
-        }
-
-        // 设置进度条
-        SwingUtilities.invokeLater(() -> {
-            progressBar.setValue(0);
-            progressBar.setVisible(true);
-            statusLabel.setText("正在执行越权测试...");
-        });
-
-        // 在单独的线程中执行测试
-        new Thread(() -> {
-            try {
-                final int totalTests = selectedRequests.size() * (sessions.size() - 1);
-                final AtomicInteger testCount = new AtomicInteger(0);
-
-                // 清空现有结果
-                privilegeEscalationResults.clear();
-
-                // 对每个请求进行测试
-                for (RequestResponseInfo info : selectedRequests) {
-                    // 获取原始请求和响应
-                    byte[] originalRequest = info.getMessageInfo().getRequest();
-                    //原始响应
-                    byte[] originalResponse = info.getMessageInfo().getResponse();
-
-                    // 如果启用URL参数过滤，对URL进行处理，移除参数部分
-                    String originalUrl = info.getUrl();
-                    String filteredUrl = UrlUtil.filterUrl(originalUrl, enableUrlFilter, urlFilterCache);
-
-                    // 在越权测试中，我们主要关注会话替换而非参数修改
-                    // 不再需要检查用户标识参数
-
-                    // 水平越权：使用不同用户的相同权限会话进行测试
-                    // 垂直越权：使用不同权限级别的会话进行测试
-                    for (int i = 0; i < sortedSessions.size(); i++) {
-                        TestSession originalSession = sortedSessions.get(i);
-
-                        // 使用原始会话的Cookie/Authorization替换请求中的Cookie/Authorization
-                        // 修复: 确保使用原始会话的Cookie替换请求中的Cookie
-                        byte[] sessionReplacedRequest = replaceSessionInRequest(originalRequest,
-                                getSessionString(originalSession));
-
-                        // 发送原始会话请求并获取响应
-                        IHttpRequestResponse originalSessionResponse = callbacks.makeHttpRequest(
-                                info.getMessageInfo().getHttpService(), sessionReplacedRequest);
-
-                        // 提取原始请求和响应的详细信息
-                        IRequestInfo originalRequestInfo = helpers.analyzeRequest(originalSessionResponse);
-                        byte[] originalSessionResponseBytes = originalSessionResponse.getResponse();
-                        IResponseInfo originalResponseInfo = helpers.analyzeResponse(originalSessionResponseBytes);
-                        int originalStatusCode = originalResponseInfo.getStatusCode();
-
-                        // 解析请求头和请求体
-                        int originalBodyOffset = originalRequestInfo.getBodyOffset();
-                        String originalRequestHeaders = new String(sessionReplacedRequest, 0, originalBodyOffset);
-                        String originalRequestBody = new String(sessionReplacedRequest, originalBodyOffset,
-                                sessionReplacedRequest.length - originalBodyOffset);
-
-                        // 解析响应头和响应体
-                        int originalResponseBodyOffset = originalResponseInfo.getBodyOffset();
-                        String originalResponseHeaders = new String(originalSessionResponseBytes, 0, originalResponseBodyOffset);
-                        String originalResponseBody = new String(originalSessionResponseBytes, originalResponseBodyOffset,
-                                originalSessionResponseBytes.length - originalResponseBodyOffset);
-
-                        // 对每个其他会话进行测试
-                        for (int j = 0; j < sortedSessions.size(); j++) {
-                            if (i == j) continue; // 跳过相同的会话
-
-                            TestSession testSession = sortedSessions.get(j);
-
-                            // 垂直越权时，检查权限级别
-                            if ("vertical".equals(testType)) {
-                                // 对于垂直越权，只测试从低权限到高权限的请求
-                                if (testSession.getPrivilegeLevel() >= originalSession.getPrivilegeLevel()) {
-                                    continue;
-                                }
-                            }
-
-                            // 更新进度
-                            final int currentTestCount = testCount.incrementAndGet();
-                            SwingUtilities.invokeLater(() -> {
-                                int progress = (int) ((currentTestCount * 100.0) / totalTests);
-                                progressBar.setValue(progress);
-                                statusLabel.setText("正在执行越权测试... (" + currentTestCount + "/" + totalTests + ")");
-                            });
-
-                            // 仅使用测试会话替换Cookie/Authorization
-                            byte[] testSessionRequest = replaceSessionInRequest(originalRequest,
-                                    getSessionString(testSession));
-
-                            // 发送测试请求并获取响应
-                            IHttpRequestResponse testResponse = callbacks.makeHttpRequest(
-                                    info.getMessageInfo().getHttpService(), testSessionRequest);
-
-                            // 提取测试请求和响应的详细信息
-                            IRequestInfo testRequestInfo = helpers.analyzeRequest(testResponse);
-                            byte[] testResponseBytes = testResponse.getResponse();
-                            IResponseInfo testResponseInfo = helpers.analyzeResponse(testResponseBytes);
-                            int testStatusCode = testResponseInfo.getStatusCode();
-
-                            // 解析请求头和请求体
-                            int testBodyOffset = testRequestInfo.getBodyOffset();
-                            String testRequestHeaders = new String(testSessionRequest, 0, testBodyOffset);
-                            String testRequestBody = new String(testSessionRequest, testBodyOffset,
-                                    testSessionRequest.length - testBodyOffset);
-
-                            // 解析响应头和响应体
-                            int testResponseBodyOffset = testResponseInfo.getBodyOffset();
-                            String testResponseHeaders = new String(testResponseBytes, 0, testResponseBodyOffset);
-                            String testResponseBody = new String(testResponseBytes, testResponseBodyOffset,
-                                    testResponseBytes.length - testResponseBodyOffset);
-
-
-                            // 计算响应相似度
-                            int similarity = vulnEngine.evaluateBySimilarity(originalSessionResponseBytes, testResponseBytes);
-                            // 综合判断是否存在漏洞
-                            VulnerabilityDetectionEngine.VulnerabilityResult results =
-                                    vulnEngine.detectPrivilegeEscalationVulnerability(testStatusCode, testResponseBytes,
-                                            originalResponse, similarity);
-
-                            final boolean isVulnerable = results.isVulnerable();
-                            final boolean needsConfirmation = results.isNeedsConfirmation();
-
-                            // 记录判断原因
-                            log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" :
-                                    (needsConfirmation ? "需要确认" : "安全"), results.getReason());
-
-
-                            // 创建测试结果，使用会话名称作为参数标识
-                            final PrivilegeEscalationResult result = new PrivilegeEscalationResult(
-                                    privilegeEscalationResults.size() + 1,
-                                    enableUrlFilter ? filteredUrl : originalUrl,
-                                    testType.equals("horizontal") ? "水平越权" : "垂直越权",
-                                    "会话替换", // 使用会话替换作为参数名
-                                    originalSession.getName(), // 原始会话名称
-                                    testSession.getName(), // 测试会话名称
-                                    originalStatusCode,
-                                    testStatusCode,
-                                    isVulnerable,
-                                    needsConfirmation,
-                                    UrlUtil.formatHttpHeaders(originalRequestHeaders),
-                                    info.getRequestBody(),
-                                    originalResponseHeaders,
-                                    originalResponseBody,
-                                    testRequestHeaders,
-                                    testRequestBody,
-                                    testResponseHeaders,
-                                    testResponseBody,
-                                    originalSession,
-                                    testSession
-                            );
-
-                            // 添加结果到列表
-                            SwingUtilities.invokeLater(() -> {
-                                privilegeEscalationResults.add(result);
-                                privilegeEscalationTableModel.fireTableDataChanged();
-
-                                // 记录结果
-                                String resultMsg;
-                                if (result.isVulnerable()) {
-                                    resultMsg = "可能存在越权漏洞";
-                                } else if (result.isNeedsConfirmation()) {
-                                    resultMsg = "需要人工确认（状态码: " + testStatusCode + "）";
-                                } else {
-                                    resultMsg = "未发现越权漏洞";
-                                }
-
-                                log.info("越权测试结果 - URL: " + info.getUrl() +
-                                        ", 会话替换: " + originalSession.getName() + " -> " + testSession.getName() +
-                                        ", 状态码: " + testStatusCode +
-                                        ", 结果: " + resultMsg);
-                            });
-                        }
-                    }
-                }
-
-                // 测试完成后，更新UI
-                final int finalTestCount = testCount.get();
-                SwingUtilities.invokeLater(() -> {
-                    progressBar.setValue(100);
-                    statusLabel.setText("越权测试完成，共测试 " + finalTestCount + " 个请求");
-
-                    // 3秒后隐藏进度条
-                    new Timer(3000, e -> {
-                        progressBar.setVisible(false);
-                        statusLabel.setText("就绪");
-                        ((Timer) e.getSource()).stop();
-                    }).start();
-
-                    JOptionPane.showMessageDialog(mainPanel,
-                            "越权测试完成，结果已添加到列表中。\n共测试 " + finalTestCount + " 个请求组合。",
-                            "信息", JOptionPane.INFORMATION_MESSAGE);
-                });
-            } catch (Exception e) {
-                log.error("执行越权测试过程中出错: " + e.getMessage());
-                e.printStackTrace();
-
-                // 出错时也要隐藏进度条
-                SwingUtilities.invokeLater(() -> {
-                    progressBar.setVisible(false);
-                    statusLabel.setText("测试越权时出错: " + e.getMessage());
-                });
-            }
-        }, "PrivilegeEscalationTester").start();
-    }
 
     /**
      * 生成会话字符串
@@ -3099,8 +2954,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         JList<TestSession> sessionList = new JList<>(sessionListModel);
         sessionList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value,
-                                                          int index, boolean isSelected, boolean cellHasFocus) {
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof TestSession) {
                     TestSession session = (TestSession) value;
@@ -3252,8 +3106,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             formPanel.add(new JLabel("权限级别:"), gbc);
 
             gbc.gridx = 1;
-            SpinnerNumberModel privilegeModel = new SpinnerNumberModel(
-                    selectedSession.getPrivilegeLevel(), 0, 10, 1);
+            SpinnerNumberModel privilegeModel = new SpinnerNumberModel(selectedSession.getPrivilegeLevel(), 0, 10, 1);
             JSpinner privilegeSpinner = new JSpinner(privilegeModel);
             formPanel.add(privilegeSpinner, gbc);
 
@@ -3302,9 +3155,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             }
 
             TestSession selectedSession = sessionList.getSelectedValue();
-            int confirm = JOptionPane.showConfirmDialog(mainPanel,
-                    "确定要删除会话 \"" + selectedSession.getName() + "\" 吗？",
-                    "确认删除", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(mainPanel, "确定要删除会话 \"" + selectedSession.getName() + "\" 吗？", "确认删除", JOptionPane.YES_NO_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 sessionListModel.remove(selectedIndex);
@@ -3416,9 +3267,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
 
             if (selectedData.isEmpty()) {
                 // 如果没有选中的请求，显示提示信息
-                JOptionPane.showMessageDialog(mainPanel,
-                        "请在「请求列表」标签页中选择要测试的请求，然后点击「测试越权」按钮，或直接在这里添加会话配置并开始测试。",
-                        "提示", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(mainPanel, "请在「请求列表」标签页中选择要测试的请求，然后点击「测试越权」按钮，或直接在这里添加会话配置并开始测试。", "提示", JOptionPane.INFORMATION_MESSAGE);
                 return; // 没有请求无法进行测试
             }
 
@@ -3488,8 +3337,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 设置表格整行背景色渲染器
         privilegeEscalationResultsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                 if (!isSelected) {
@@ -3746,13 +3594,11 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         JScrollPane modifiedResponseScrollPane = new JScrollPane(privilegeEscalationModifiedResponseViewer);
 
         // 创建原始请求/响应分割面板
-        JSplitPane originalSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                originalRequestScrollPane, originalResponseScrollPane);
+        JSplitPane originalSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, originalRequestScrollPane, originalResponseScrollPane);
         originalSplitPane.setResizeWeight(0.5);
 
         // 创建修改后请求/响应分割面板
-        JSplitPane modifiedSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                modifiedRequestScrollPane, modifiedResponseScrollPane);
+        JSplitPane modifiedSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, modifiedRequestScrollPane, modifiedResponseScrollPane);
         modifiedSplitPane.setResizeWeight(0.5);
 
         // 创建查看器标签页
@@ -3770,147 +3616,25 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         PrivilegeEscalationResult result = privilegeEscalationResults.get(row);
 
                         // 显示原始请求和响应
-                        privilegeEscalationOriginalRequestViewer.setText(result.getOriginalRequestHeaders() + "\n\n" + result.getOriginalRequestBody());
-                        privilegeEscalationOriginalResponseViewer.setText(result.getOriginalResponseHeaders() + "\n\n" + result.getOriginalResponseBody());
+                        privilegeEscalationOriginalRequestViewer.setText(result.getOriginalRequestHeaders() + result.getOriginalRequestBody());
+                        privilegeEscalationOriginalResponseViewer.setText(result.getOriginalResponseHeaders() + result.getOriginalResponseBody());
 
                         // 显示修改后请求和响应
-                        privilegeEscalationModifiedRequestViewer.setText(result.getModifiedRequestHeaders() + "\n\n" + result.getModifiedRequestBody());
-                        privilegeEscalationModifiedResponseViewer.setText(result.getModifiedResponseHeaders() + "\n\n" + result.getModifiedResponseBody());
+                        privilegeEscalationModifiedRequestViewer.setText(result.getModifiedRequestHeaders() + result.getModifiedRequestBody());
+                        privilegeEscalationModifiedResponseViewer.setText(result.getModifiedResponseHeaders() + result.getModifiedResponseBody());
                     }
                 }
             }
         });
 
         // 创建分割面板
-        JSplitPane resultSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                new JScrollPane(privilegeEscalationResultsTable), viewerTabbedPane);
+        JSplitPane resultSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(privilegeEscalationResultsTable), viewerTabbedPane);
         resultSplitPane.setResizeWeight(0.5);
 
         // 创建整体布局
         privilegeEscalationPanel.add(topPanel, BorderLayout.NORTH);
         privilegeEscalationPanel.add(resultControlPanel, BorderLayout.SOUTH);
         privilegeEscalationPanel.add(resultSplitPane, BorderLayout.CENTER);
-    }
-
-    /**
-     * 替换请求中的会话信息（Cookie/Authorization）
-     *
-     * @param request 原始请求
-     * @param session 会话信息字符串
-     * @return 替换后的请求
-     */
-    private byte[] replaceSessionInRequest(byte[] request, String session) {
-        if (session == null || session.trim().isEmpty()) {
-            return request;
-        }
-
-        try {
-            IRequestInfo requestInfo = helpers.analyzeRequest(request);
-            List<String> headers = requestInfo.getHeaders();
-            List<String> newHeaders = new ArrayList<>();
-            boolean cookieReplaced = false;
-            boolean authReplaced = false;
-
-            // 解析会话格式 - 支持Cookie和Authorization头
-            Map<String, String> cookieMap = new HashMap<>();
-            String authHeader = null;
-
-            // 提取会话中的Cookie和Authorization信息
-            if (session.contains("Cookie:")) {
-                String cookiePart = session.substring(session.indexOf("Cookie:"));
-                if (cookiePart.contains("\n")) {
-                    cookiePart = cookiePart.substring(0, cookiePart.indexOf("\n"));
-                }
-                cookiePart = cookiePart.substring("Cookie:".length()).trim();
-
-                // 解析Cookie键值对
-                String[] cookies = cookiePart.split(";");
-                for (String cookie : cookies) {
-                    cookie = cookie.trim();
-                    if (cookie.isEmpty()) continue;
-
-                    if (cookie.contains("=")) {
-                        String[] parts = cookie.split("=", 2);
-                        cookieMap.put(parts[0].trim(), parts.length > 1 ? parts[1].trim() : "");
-                    } else {
-                        // 处理不包含等号的Cookie（如标志性Cookie）
-                        cookieMap.put(cookie, "");
-                    }
-                }
-            }
-
-            if (session.contains("Authorization:")) {
-                String authPart = session.substring(session.indexOf("Authorization:"));
-                if (authPart.contains("\n")) {
-                    authPart = authPart.substring(0, authPart.indexOf("\n"));
-                }
-                authHeader = authPart.trim();
-            }
-
-            // 替换请求头
-            for (String header : headers) {
-                if (header.toLowerCase().startsWith("cookie:") && !cookieMap.isEmpty()) {
-                    // 替换Cookie头
-                    StringBuilder newCookie = new StringBuilder("Cookie: ");
-                    boolean first = true;
-                    for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
-                        if (!first) {
-                            newCookie.append("; ");
-                        }
-                        if (entry.getValue().isEmpty()) {
-                            newCookie.append(entry.getKey());
-                        } else {
-                            newCookie.append(entry.getKey()).append("=").append(entry.getValue());
-                        }
-                        first = false;
-                    }
-                    newHeaders.add(newCookie.toString());
-                    cookieReplaced = true;
-                    log.info("已替换Cookie: " + newCookie.toString());
-                } else if (header.toLowerCase().startsWith("authorization:") && authHeader != null) {
-                    // 替换Authorization头
-                    newHeaders.add(authHeader);
-                    authReplaced = true;
-                    log.info("已替换Authorization: " + authHeader);
-                } else {
-                    // 保留其他头
-                    newHeaders.add(header);
-                }
-            }
-
-            // 如果原请求没有Cookie头但会话中有Cookie，添加新的Cookie头
-            if (!cookieReplaced && !cookieMap.isEmpty()) {
-                StringBuilder newCookie = new StringBuilder("Cookie: ");
-                boolean first = true;
-                for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
-                    if (!first) {
-                        newCookie.append("; ");
-                    }
-                    if (entry.getValue().isEmpty()) {
-                        newCookie.append(entry.getKey());
-                    } else {
-                        newCookie.append(entry.getKey()).append("=").append(entry.getValue());
-                    }
-                    first = false;
-                }
-                newHeaders.add(newCookie.toString());
-                log.info("已添加新Cookie: " + newCookie.toString());
-            }
-
-            // 如果原请求没有Authorization头但会话中有Authorization，添加新的Authorization头
-            if (!authReplaced && authHeader != null) {
-                newHeaders.add(authHeader);
-                log.info("已添加新Authorization: " + authHeader);
-            }
-
-            // 重建请求
-            int bodyOffset = requestInfo.getBodyOffset();
-            byte[] body = Arrays.copyOfRange(request, bodyOffset, request.length);
-            return helpers.buildHttpMessage(newHeaders, body);
-        } catch (Exception e) {
-            log.error("替换会话信息时出错: " + e.getMessage(), e);
-            return request; // 出错时返回原始请求
-        }
     }
 
 
@@ -4053,9 +3777,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             // 检查目录是否为空
             File[] files = selectedDir.listFiles();
             if (files != null && files.length > 0) {
-                int confirm = JOptionPane.showConfirmDialog(mainPanel,
-                        "所选目录不为空，可能会覆盖现有文件。是否继续？",
-                        "确认", JOptionPane.YES_NO_OPTION);
+                int confirm = JOptionPane.showConfirmDialog(mainPanel, "所选目录不为空，可能会覆盖现有文件。是否继续？", "确认", JOptionPane.YES_NO_OPTION);
                 if (confirm != JOptionPane.YES_OPTION) {
                     log.info("用户取消了导出，因为目录不为空");
                     return;
@@ -4124,9 +3846,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     SwingUtilities.invokeLater(() -> {
                         progressBar.setVisible(false);
                         statusLabel.setText("就绪");
-                        JOptionPane.showMessageDialog(mainPanel,
-                                "成功导出 " + finalSuccessCount + "/" + selectedData.size() + " 个请求到目录: " + dirPath,
-                                "导出完成", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(mainPanel, "成功导出 " + finalSuccessCount + "/" + selectedData.size() + " 个请求到目录: " + dirPath, "导出完成", JOptionPane.INFORMATION_MESSAGE);
                     });
                     log.info("成功导出 {} 个请求到目录: {}", finalSuccessCount, dirPath);
 
@@ -4134,8 +3854,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     SwingUtilities.invokeLater(() -> {
                         progressBar.setVisible(false);
                         statusLabel.setText("导出失败");
-                        JOptionPane.showMessageDialog(mainPanel,
-                                "导出失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(mainPanel, "导出失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                     });
                     log.error("导出失败", e);
                 }
