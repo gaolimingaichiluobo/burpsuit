@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Slf4j
 public class AuthTestTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"选择", "序号", "URL", "状态码", "测试结果"};
+    private final String[] columnNames = {"选择", "序号", "URL", "状态码", "测试结果", "判定原因"};
     private final List<AuthTestResult> authTestResults;
 
     public AuthTestTableModel(List<AuthTestResult> authTestResults) {
@@ -68,6 +68,8 @@ public class AuthTestTableModel extends AbstractTableModel {
                 } else {
                     return "安全";
                 }
+            case 5:
+                return result.getResultReson();
             default:
                 return "";
         }

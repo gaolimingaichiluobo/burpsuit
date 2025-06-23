@@ -1,12 +1,14 @@
 package burp.result;
 
 import burp.session.TestSession;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
  * 越权测试结果类
  */
 @Data
+@AllArgsConstructor
 public class PrivilegeEscalationResult {
     private int id;
     private String url;
@@ -29,36 +31,6 @@ public class PrivilegeEscalationResult {
     private String modifiedResponseBody;
     private TestSession originalSession; // 原始会话
     private TestSession modifiedSession; // 修改后会话
+    private String resultReson;
 
-    public PrivilegeEscalationResult(int id, String url, String testType, String paramName,
-                                     String originalValue, String modifiedValue,
-                                     int originalStatusCode, int modifiedStatusCode,
-                                     boolean vulnerable, boolean needsConfirmation,
-                                     String originalRequestHeaders, String originalRequestBody,
-                                     String originalResponseHeaders, String originalResponseBody,
-                                     String modifiedRequestHeaders, String modifiedRequestBody,
-                                     String modifiedResponseHeaders, String modifiedResponseBody,
-                                     TestSession originalSession, TestSession modifiedSession) {
-        this.id = id;
-        this.url = url;
-        this.testType = testType;
-        this.paramName = paramName;
-        this.originalValue = originalValue;
-        this.modifiedValue = modifiedValue;
-        this.originalStatusCode = originalStatusCode;
-        this.modifiedStatusCode = modifiedStatusCode;
-        this.vulnerable = vulnerable;
-        this.needsConfirmation = needsConfirmation;
-        this.selected = false;
-        this.originalRequestHeaders = originalRequestHeaders;
-        this.originalRequestBody = originalRequestBody;
-        this.originalResponseHeaders = originalResponseHeaders;
-        this.originalResponseBody = originalResponseBody;
-        this.modifiedRequestHeaders = modifiedRequestHeaders;
-        this.modifiedRequestBody = modifiedRequestBody;
-        this.modifiedResponseHeaders = modifiedResponseHeaders;
-        this.modifiedResponseBody = modifiedResponseBody;
-        this.originalSession = originalSession;
-        this.modifiedSession = modifiedSession;
-    }
 }

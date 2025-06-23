@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Slf4j
 public class PrivilegeEscalationTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"选择", "序号", "URL", "测试类型", "测试内容", "原始会话", "测试会话", "原始状态码", "测试状态码", "测试结果"};
+    private final String[] columnNames = {"选择", "序号", "URL", "测试类型", "测试内容", "原始会话", "测试会话", "原始状态码", "测试状态码", "测试结果", "判定原因"};
 
     private final List<PrivilegeEscalationResult> privilegeEscalationResults;
 
@@ -80,6 +80,8 @@ public class PrivilegeEscalationTableModel extends AbstractTableModel {
                 } else {
                     return "安全";
                 }
+            case 10:
+                return result.getResultReson();
             default:
                 return "";
         }

@@ -475,7 +475,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                             info.setSelected(false);
                         }
                         tableModel.fireTableDataChanged();
-                        log.info("已取消全选 " + capturedData.size() + " 条记录");
+                        log.info("已取消全选 {} 条记录", capturedData.size());
                     }
                 });
 
@@ -1686,8 +1686,18 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), result.getReason());
 
                         // 创建测试结果对象
-                        final AuthTestResult testResult = new AuthTestResult(authTestResults.size() + 1, info.getUrl(), statusCode, isVulnerable, needsConfirmation, requestHeadersStr, requestBodyStr, //最好采用标准的
-                                responseHeadersStr, responseBodyStr);
+                        final AuthTestResult testResult = new AuthTestResult(
+                                authTestResults.size() + 1,
+                                info.getUrl(),
+                                statusCode,
+                                isVulnerable,
+                                needsConfirmation,
+                                false,
+                                requestHeadersStr,
+                                requestBodyStr, //最好采用标准的
+                                responseHeadersStr,
+                                responseBodyStr,
+                                result.getReason());
 
                         // 创建新的记录并更新UI（在EDT线程中）
                         int finalStatusCode = statusCode;
@@ -1767,6 +1777,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             }
         }, "UnauthorizedAccessTester").start();
     }
+
     /**
      * 测试CSRF漏洞，修改Referer后重新发送请求
      */
@@ -1940,7 +1951,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         // 记录判断原因
                         log.info("URL: {} 漏洞判断结果: {}, 原因: {}", info.getUrl(), isVulnerable ? "存在漏洞" : (needsConfirmation ? "需要确认" : "安全"), result.getReason());
                         // 创建测试结果对象
-                        final CsrfTestResult testResult = new CsrfTestResult(csrfTestResults.size() + 1, info.getUrl(), statusCode, isVulnerable, needsConfirmation, requestHeadersStr, requestBodyStr, responseHeadersStr, responseBodyStr, modifiedReferer);
+                        final CsrfTestResult testResult = new CsrfTestResult(csrfTestResults.size() + 1, info.getUrl(), statusCode, isVulnerable, needsConfirmation, false, requestHeadersStr, requestBodyStr, responseHeadersStr, responseBodyStr, modifiedReferer, result.getReason());
 
                         // 创建新的记录并更新UI（在EDT线程中）
                         SwingUtilities.invokeLater(new Runnable() {
@@ -2147,10 +2158,10 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                 int modifiedBodyOffset = modifiedRequestInfo.getBodyOffset();
 
                                 // 解析请求头和请求体
-                                String requestBodyStr="";
+                                String requestBodyStr = "";
                                 String requestHeadersStr = new String(requestBytes, 0, modifiedBodyOffset);
                                 if (requestBytes.length > modifiedBodyOffset) {
-                                    requestBodyStr=new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
+                                    requestBodyStr = new String(requestBytes, modifiedBodyOffset, requestBytes.length - modifiedBodyOffset);
                                 }
 
                                 // 解析响应头和响应体
@@ -2179,10 +2190,12 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                         statusCode,
                                         isVulnerable,
                                         needsConfirmation,
+                                        false,
                                         requestHeadersStr,
                                         requestBodyStr,
                                         responseHeadersStr,
-                                        responseBodyStr
+                                        responseBodyStr,
+                                        result.getReason()
                                 );
 
                                 // 创建新的记录并更新UI（在EDT线程中）
@@ -2409,6 +2422,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     testStatusCode,
                                     isVulnerable,
                                     needsConfirmation,
+                                    false,
                                     originalRequestHeaders,
                                     originalRequestBody,
                                     originalResponseHeaders,
@@ -2418,7 +2432,8 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                                     testResponseHeaders,
                                     testResponseBody,
                                     originalSession,
-                                    testSession);
+                                    testSession,
+                                    results.getReason());
 
                             // 添加结果到列表
                             SwingUtilities.invokeLater(() -> {
@@ -2618,8 +2633,6 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         // 更新表格
         authTestTableModel.fireTableDataChanged();
     }
-
-
 
 
     /**

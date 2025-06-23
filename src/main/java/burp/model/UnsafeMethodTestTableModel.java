@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 不安全HTTP方法测试表格模型
  */ public class UnsafeMethodTestTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"选择", "序号", "URL", "原始方法", "状态码", "测试结果", "修改的方法"};
+    private final String[] columnNames = {"选择", "序号", "URL", "原始方法", "状态码", "测试结果", "修改的方法", "判定原因"};
 
     private final List<UnsafeMethodTestResult> unsafeMethodTestResults;
 
@@ -74,6 +74,8 @@ import java.util.List;
                 }
             case 6:
                 return result.getModifiedMethod();
+            case 7:
+                return result.getResultReson();
             default:
                 return "";
         }

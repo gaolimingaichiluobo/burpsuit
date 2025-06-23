@@ -2,11 +2,13 @@ package burp.result;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 未授权测试结果类
  */
 @Data
+@AllArgsConstructor
 public class AuthTestResult {
     private int id;
     private String url;
@@ -18,21 +20,5 @@ public class AuthTestResult {
     private String requestBody;
     private String responseHeaders;
     private String responseBody;
-
-    public AuthTestResult(int id, String url, int statusCode, boolean vulnerable, boolean needsConfirmation,
-                          String requestHeaders, String requestBody,
-                          String responseHeaders, String responseBody) {
-        this.id = id;
-        this.url = url;
-        this.statusCode = statusCode;
-        this.vulnerable = vulnerable;
-        this.needsConfirmation = needsConfirmation;
-        this.selected = false;
-        this.requestHeaders = requestHeaders;
-        this.requestBody = requestBody;
-        this.responseHeaders = responseHeaders;
-        this.responseBody = responseBody;
-    }
-
-
+    private String resultReson;
 }

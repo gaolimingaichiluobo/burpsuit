@@ -12,7 +12,7 @@ import java.util.List;
  * CSRF测试表格模型
  */
 public class CsrfTestTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"选择", "序号", "URL", "状态码", "测试结果", "修改的Referer"};
+    private final String[] columnNames = {"选择", "序号", "URL", "状态码", "测试结果", "修改的Referer", "判定原因"};
 
     private final List<CsrfTestResult> csrfTestResults;
 
@@ -74,6 +74,8 @@ public class CsrfTestTableModel extends AbstractTableModel {
                 }
             case 5:
                 return result.getModifiedReferer();
+            case 6:
+                return result.getResultReson();
             default:
                 return "";
         }
