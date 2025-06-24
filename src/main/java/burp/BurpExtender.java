@@ -2491,7 +2491,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 // 取消操作
                 return;
             }
-
+            result.setSelected(false);
             // 更新表格
             authTestTableModel.fireTableDataChanged();
         } else {
@@ -2625,7 +2625,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
             // 取消操作
             return;
         }
-
+        result.setSelected(false);
         // 更新表格
         csrfTestTableModel.fireTableDataChanged();
     }
