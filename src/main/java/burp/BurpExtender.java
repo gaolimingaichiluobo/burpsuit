@@ -288,7 +288,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                     }
                 });
 
-                JButton clearButton = new JButton("清空列表");
+                JButton clearButton = new JButton("刪除已选中");
                 clearButton.addActionListener(e -> clearData());
 
                 // 创建第三行面板：URL去重开关和清空列表按钮
@@ -1297,11 +1297,10 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
      */
     private void clearData() {
         synchronized (capturedData) {
-            int count = capturedData.size();
-            capturedData.clear();
+            capturedData.removeIf(RequestResponseInfo::isSelected);
             uniqueUrls.clear(); // 清空URL去重集合
             tableModel.fireTableDataChanged();
-            log.info("已清空 " + count + " 条记录");
+            log.info("已清空记录");
         }
     }
 
@@ -1589,9 +1588,25 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                         byte[] requestBody = Arrays.copyOfRange(originalRequest, bodyOffset, originalRequest.length);
 
                         // 构建新请求头，去掉 Cookie
-                        List<String> newHeaders = requestInfo.getHeaders().stream().map(String::trim).filter(header -> !header.toLowerCase().startsWith("cookie:")).collect(Collectors.toList());
-                        // 可选：保留空 Cookie
-                        newHeaders.add("Cookie:");
+                        List<String> newHeaders = requestInfo.getHeaders().stream()
+                                .map(String::trim)  // 去除每个 header 的前后空格
+                                .filter(header -> {
+                                    String lower = header.toLowerCase();
+                                    return !lower.startsWith("cookie:") && !lower.startsWith("authorization:");
+                                })
+                                .collect(Collectors.toList());
+
+                        requestInfo.getHeaders().stream()
+                                .map(String::toLowerCase)
+                                .forEach(header -> {
+                                    if (header.startsWith("cookie:")) {
+                                        newHeaders.add("Cookie:");  // 如果原请求包含 Cookie，则添加空的 Cookie
+                                    }
+                                    if (header.startsWith("authorization:")) {
+                                        newHeaders.add("Authorization:");  // 如果原请求包含 Authorization，则添加空的 Authorization
+                                    }
+                                });
+
 
                         //todo 需要确定一下是否需要最后的换行  确定：需要
 
@@ -2852,7 +2867,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         if (session.getAuthorization() != null && !session.getAuthorization().trim().isEmpty()) {
             sb.append("Authorization: ").append(session.getAuthorization());
         }
-
+        log.debug("回话字符串:{}", sb.toString());
         return sb.toString();
     }
 

@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class HttpServiceUtil {
@@ -58,96 +60,91 @@ public class HttpServiceUtil {
      * @return 替换后的请求
      */
     public byte[] replaceSessionInRequest(byte[] request, String session) {
-        if (session == null || session.trim().isEmpty()) {
-            return request;
-        }
+        if (session == null || session.trim().isEmpty()) return request;
 
         try {
             IRequestInfo requestInfo = helpers.analyzeRequest(request);
             List<String> headers = requestInfo.getHeaders();
             List<String> newHeaders = new ArrayList<>();
-            boolean cookieReplaced = false;
 
-            // 解析会话格式 - 支持Cookie和Authorization头
+            // 提取 Cookie 和 Authorization
             Map<String, String> cookieMap = new HashMap<>();
+            String authHeader = extractHeader(session, "Authorization");
 
-            // 提取会话中的Cookie和Authorization信息
-            if (session.contains("Cookie:")) {
-                String cookiePart = session.substring(session.indexOf("Cookie:"));
-                if (cookiePart.contains("\n")) {
-                    cookiePart = cookiePart.substring(0, cookiePart.indexOf("\n"));
-                }
-                cookiePart = cookiePart.substring("Cookie:".length()).trim();
-
-                // 解析Cookie键值对
-                String[] cookies = cookiePart.split(";");
-                for (String cookie : cookies) {
+            // 提取 Cookie 到 Map
+            String cookieHeader = extractHeader(session, "Cookie");
+            if (cookieHeader != null) {
+                String cookieValue = cookieHeader.substring("Cookie:".length()).trim();
+                for (String cookie : cookieValue.split(";")) {
                     cookie = cookie.trim();
                     if (cookie.isEmpty()) continue;
-
-                    if (cookie.contains("=")) {
-                        String[] parts = cookie.split("=", 2);
-                        cookieMap.put(parts[0].trim(), parts.length > 1 ? parts[1].trim() : "");
-                    } else {
-                        // 处理不包含等号的Cookie（如标志性Cookie）
-                        cookieMap.put(cookie, "");
-                    }
+                    String[] parts = cookie.split("=", 2);
+                    cookieMap.put(parts[0], parts.length > 1 ? parts[1] : "");
                 }
             }
 
-            // 替换请求头
+            boolean cookieReplaced = false;
+            boolean authReplaced = false;
+
             for (String header : headers) {
-                if (header.toLowerCase().startsWith("cookie:") && !cookieMap.isEmpty()) {
-                    // 替换Cookie头
-                    StringBuilder newCookie = new StringBuilder("Cookie: ");
-                    boolean first = true;
-                    for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
-                        if (!first) {
-                            newCookie.append("; ");
-                        }
-                        if (entry.getValue().isEmpty()) {
-                            newCookie.append(entry.getKey());
-                        } else {
-                            newCookie.append(entry.getKey()).append("=").append(entry.getValue());
-                        }
-                        first = false;
-                    }
-                    newHeaders.add(newCookie.toString());
+                String lower = header.toLowerCase();
+                if (lower.startsWith("cookie:") && !cookieMap.isEmpty()) {
+                    newHeaders.add(buildCookieHeader(cookieMap));
                     cookieReplaced = true;
-                    log.info("已替换Cookie: {}", newCookie.toString());
+                    log.info("已替换Cookie");
+                } else if (lower.startsWith("authorization:") && authHeader != null) {
+                    newHeaders.add(authHeader);
+                    authReplaced = true;
+                    log.info("已替换Authorization");
                 } else {
-                    // 保留其他头
                     newHeaders.add(header);
                 }
             }
 
-            // 如果原请求没有Cookie头但会话中有Cookie，添加新的Cookie头
+            // 没有则添加
             if (!cookieReplaced && !cookieMap.isEmpty()) {
-                StringBuilder newCookie = new StringBuilder("Cookie: ");
-                boolean first = true;
-                for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
-                    if (!first) {
-                        newCookie.append("; ");
-                    }
-                    if (entry.getValue().isEmpty()) {
-                        newCookie.append(entry.getKey());
-                    } else {
-                        newCookie.append(entry.getKey()).append("=").append(entry.getValue());
-                    }
-                    first = false;
-                }
-                newHeaders.add(newCookie.toString());
-                log.info("已添加新Cookie: {}", newCookie.toString());
+                newHeaders.add(buildCookieHeader(cookieMap));
+                log.info("已添加新Cookie");
             }
-            // 重建请求
-            int bodyOffset = requestInfo.getBodyOffset();
-            byte[] body = Arrays.copyOfRange(request, bodyOffset, request.length);
+            if (!authReplaced && authHeader != null) {
+                newHeaders.add(authHeader);
+                log.info("已添加新Authorization");
+            }
+
+            // 重新构建请求
+            byte[] body = Arrays.copyOfRange(request, requestInfo.getBodyOffset(), request.length);
             return helpers.buildHttpMessage(newHeaders, body);
+
         } catch (Exception e) {
-            log.error("替换会话信息时出错: {}", e.getMessage(), e);
-            return request; // 出错时返回原始请求
+            log.error("替换会话信息出错: " + e.getMessage(), e);
+            return request;
         }
     }
+
+    private String buildCookieHeader(Map<String, String> cookieMap) {
+        StringBuilder sb = new StringBuilder("Cookie: ");
+        boolean first = true;
+        for (Map.Entry<String, String> entry : cookieMap.entrySet()) {
+            if (!first) sb.append("; ");
+            sb.append(entry.getKey());
+            if (!entry.getValue().isEmpty()) {
+                sb.append("=").append(entry.getValue());
+            }
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    private String extractHeader(String session, String key) {
+        Pattern pattern = Pattern.compile("(?i)^" + key + ":(.*?)$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(session);
+        if (matcher.find()) {
+            return key + ":" + matcher.group(1).trim();
+        }
+        return null;
+    }
+
+
     /**
      * 创建请求字节数组，确保正确处理各种字符编码
      */
