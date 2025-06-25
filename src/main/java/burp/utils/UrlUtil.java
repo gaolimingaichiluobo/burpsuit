@@ -326,6 +326,31 @@ public class UrlUtil {
         }
     }
 
+
+    public static List<String> replaceHeader(String key, String value, List<String> headers) {
+        List<String> newHeaders = new ArrayList<>();
+        boolean replaced = false;
+        String keyLower = key.toLowerCase();
+
+        for (String header : headers) {
+            int colonIndex = header.indexOf(":");
+            if (colonIndex != -1) {
+                String headerKey = header.substring(0, colonIndex).trim();
+                if (headerKey.equalsIgnoreCase(key)) {
+                    newHeaders.add(key + ": " + value);
+                    replaced = true;
+                    continue;
+                }
+            }
+            newHeaders.add(header);
+        }
+        if (!replaced) {
+            newHeaders.add(key + ": " + value);
+        }
+        return newHeaders;
+    }
+
+
     /**
      * 对URL进行规范化处理，用于去重
      * 默认移除参数部分以实现更好的去重效果

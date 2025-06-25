@@ -291,10 +291,53 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 JButton clearButton = new JButton("刪除已选中");
                 clearButton.addActionListener(e -> clearData());
 
+                // 新增：更新请求头按钮
+                JButton updateHeaderButton = new JButton("更新请求头");
+                updateHeaderButton.addActionListener(e -> {
+                    // 弹出输入窗口
+                    JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(mainPanel), "更新请求头", true);
+                    dialog.setLayout(new BorderLayout());
+
+                    JPanel inputPanel = new JPanel();
+                    inputPanel.setLayout(new GridLayout(2, 2, 5, 5));
+                    JLabel keyLabel = new JLabel("请求头Key:");
+                    JTextField keyField = new JTextField(20);
+                    JLabel valueLabel = new JLabel("请求头Value:");
+                    JTextField valueField = new JTextField(20);
+                    inputPanel.add(keyLabel);
+                    inputPanel.add(keyField);
+                    inputPanel.add(valueLabel);
+                    inputPanel.add(valueField);
+
+                    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    JButton cancelButton = new JButton("取消");
+                    JButton confirmButton = new JButton("确认");
+                    buttonPanel.add(cancelButton);
+                    buttonPanel.add(confirmButton);
+
+                    cancelButton.addActionListener(ev -> dialog.dispose());
+                    confirmButton.addActionListener(ev -> {
+                        String key = keyField.getText().trim();
+                        String value = valueField.getText().trim();
+                        if (!key.isEmpty()) {
+                            // 调用你自定义的替换方法
+                            updateRequestHeadersForSelected(key, value);
+                        }
+                        dialog.dispose();
+                    });
+
+                    dialog.add(inputPanel, BorderLayout.CENTER);
+                    dialog.add(buttonPanel, BorderLayout.SOUTH);
+                    dialog.pack();
+                    dialog.setLocationRelativeTo(mainPanel);
+                    dialog.setVisible(true);
+                });
+
                 // 创建第三行面板：URL去重开关和清空列表按钮
                 JPanel thirdRowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
                 thirdRowPanel.add(enableUrlDeduplicationCheckBox);
                 thirdRowPanel.add(clearButton);
+                thirdRowPanel.add(updateHeaderButton);
 
                 // 添加第三行到控制面板
                 gbc.gridx = 0;
@@ -440,6 +483,45 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
                 requestPanel.add(controlPanel, BorderLayout.NORTH);
                 requestPanel.add(selectionPanel, BorderLayout.SOUTH);
                 requestPanel.add(tableScrollPane, BorderLayout.CENTER);
+
+                // 添加双击事件，显示请求和响应详情
+                requestsTable.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getClickCount() == 2) {
+                            int row = requestsTable.getSelectedRow();
+                            if (row >= 0 && row < capturedData.size()) {
+                                int modelRow = requestsTable.convertRowIndexToModel(row);
+                                RequestResponseInfo info = capturedData.get(modelRow);
+
+                                // 创建弹窗
+                                JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(mainPanel), "请求与响应详情", true);
+                                dialog.setLayout(new BorderLayout());
+
+                                JTextArea requestArea = new JTextArea(info.getRequestHeaders() + info.getRequestBody());
+                                requestArea.setEditable(false);
+                                JTextArea responseArea = new JTextArea(info.getResponseBody());
+                                responseArea.setEditable(false);
+
+                                JTabbedPane tabbedPane = new JTabbedPane();
+                                tabbedPane.addTab("请求", new JScrollPane(requestArea));
+                                tabbedPane.addTab("响应", new JScrollPane(responseArea));
+
+                                dialog.add(tabbedPane, BorderLayout.CENTER);
+
+                                JButton closeButton = new JButton("关闭");
+                                closeButton.addActionListener(ev -> dialog.dispose());
+                                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                                buttonPanel.add(closeButton);
+
+                                dialog.add(buttonPanel, BorderLayout.SOUTH);
+                                dialog.setSize(800, 600);
+                                dialog.setLocationRelativeTo(mainPanel);
+                                dialog.setVisible(true);
+                            }
+                        }
+                    }
+                });
 
                 // 创建未授权测试结果表格模型
                 authTestTableModel = new AuthTestTableModel(authTestResults);
@@ -1205,6 +1287,40 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
         log.info("所有功能已注册");
     }
 
+    private void updateRequestHeadersForSelected(String key, String value) {
+        synchronized (capturedData) {
+            capturedData.stream()
+                    .filter(RequestResponseInfo::isSelected)
+                    .forEach(info -> {
+                        IHttpRequestResponse messageInfo = info.getMessageInfo();
+                        byte[] originalRequest = messageInfo.getRequest();
+                        IRequestInfo requestInfo = helpers.analyzeRequest(originalRequest);
+                        int oldBodyOffset = requestInfo.getBodyOffset();
+                        byte[] requestBody = Arrays.copyOfRange(originalRequest, oldBodyOffset, originalRequest.length);
+                        List<String> headers = requestInfo.getHeaders();
+                        List<String> newHeaders = UrlUtil.replaceHeader(key, value, headers);
+                        byte[] newRequest = helpers.buildHttpMessage(newHeaders, requestBody);
+                        // 重新解析新的请求，获取新的bodyOffset
+                        IRequestInfo newRequestInfo = helpers.analyzeRequest(newRequest);
+                        int newBodyOffset = newRequestInfo.getBodyOffset();
+                        // 用原始 response 字节流
+                        byte[] responseBytes = messageInfo.getResponse();
+                        // 构建新的 DummyHttpRequestResponse（或你项目里的实现）
+                        IHttpRequestResponse newMessageInfo = new burp.http.DummyHttpRequestResponse(
+                                newRequest,
+                                responseBytes,
+                                messageInfo.getHttpService()
+                        );
+                        info.setMessageInfo(newMessageInfo);
+
+                        // 更新请求头和请求体，保证UI同步
+                        info.setRequestHeaders(new String(newRequest, 0, newBodyOffset));
+                        info.setRequestBody(new String(newRequest, newBodyOffset, newRequest.length - newBodyOffset));
+                    });
+            tableModel.fireTableDataChanged();
+        }
+    }
+
     /**
      * 返回在Burp界面中显示的标签页名称
      *
@@ -1298,7 +1414,7 @@ public class BurpExtender implements IBurpExtender, ITab, IHttpListener, IContex
     private void clearData() {
         synchronized (capturedData) {
             capturedData.removeIf(RequestResponseInfo::isSelected);
-            uniqueUrls.clear(); // 清空URL去重集合
+            capturedData.stream().map(info -> UrlUtil.normalizeUrlForDeduplication(info.getUrl())).forEach(uniqueUrls::remove);
             tableModel.fireTableDataChanged();
             log.info("已清空记录");
         }
